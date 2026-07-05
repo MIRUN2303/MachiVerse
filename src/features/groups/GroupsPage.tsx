@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GROUPS, USERS, SPORT_CONFIG, getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, computeMemberGroupStats, CURRENT_USER_ID, getOverallWinRate } from '../../data/mockData';
+import { GROUPS, SPORT_CONFIG, getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
 import { Card, Avatar, Badge, Button, SectionHeader } from '../../components/ui';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
 import { clsx } from 'clsx';
+import { useAppStore } from '../../store/useAppStore';
+import type { SportType } from '../../data/types';
+import toast from 'react-hot-toast';
 
 const ROLE_CONFIG = {
   creator: { label: 'Creator', color: '#f59e0b', emoji: '👑' },
@@ -25,10 +28,7 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
 
   return (
     <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full text-left"
-      >
+      <button onClick={() => setOpen(!open)} className="w-full text-left">
         <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all">
           <Avatar src={user.avatar} name={user.name} size="md" />
           <div className="flex-1 min-w-0">
@@ -49,22 +49,12 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
           )}>
             {roleCfg.emoji}
           </span>
-          <motion.span
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-white/30 text-sm"
-          >▼</motion.span>
+          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-white/30 text-sm">▼</motion.span>
         </div>
       </button>
-
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="mx-3 mb-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">📊 Group Stats</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -96,6 +86,88 @@ const StatItem: React.FC<{ label: string; value: string | number; color: string 
 );
 
 // =============================================
+// CREATE GROUP MODAL
+// =============================================
+const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const createGroup = useAppStore(s => s.createGroup);
+  const [name, setName] = useState('');
+  const [sport, setSport] = useState<SportType>('badminton');
+  const [description, setDescription] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [rules, setRules] = useState('');
+
+  const handleSubmit = () => {
+    if (!name.trim()) { toast.error('Group name is required'); return; }
+    const rulesArr = rules.split('\n').filter(r => r.trim());
+    const id = createGroup({
+      name: name.trim(),
+      sport,
+      description: description.trim(),
+      isPrivate,
+      rules: rulesArr.length > 0 ? rulesArr : ['Respect all members', 'Have fun!'],
+    });
+    if (id) onClose();
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60" />
+      <motion.div
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6"
+        style={{ background: '#0f0a1e', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-white text-lg">Create Group</h2>
+          <button onClick={onClose} className="text-white/40 text-lg">✕</button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Name *</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Weekend Crew" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[#aaeb00]/50" />
+          </div>
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Sport</label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(SPORT_CONFIG).map(([key, cfg]) => (
+                <button key={key} onClick={() => setSport(key as SportType)}
+                  className={clsx('px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', sport === key ? 'text-white border border-white/20' : 'text-white/40 border border-transparent')}
+                  style={sport === key ? { background: cfg.bg } : {}}
+                >{cfg.emoji} {cfg.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What's this group about?" rows={2} className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[#aaeb00]/50 resize-none" />
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-white/50 text-xs font-semibold">Private group</label>
+            <button onClick={() => setIsPrivate(!isPrivate)} className={clsx('w-10 h-5 rounded-full transition-all', isPrivate ? 'bg-[#aaeb00]' : 'bg-white/20')}>
+              <div className={clsx('w-4 h-4 rounded-full bg-white transition-all', isPrivate ? 'translate-x-5' : 'translate-x-0.5')} />
+            </button>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Rules (one per line)</label>
+            <textarea value={rules} onChange={e => setRules(e.target.value)} placeholder="Be on time&#10;Respect others&#10;Have fun!" rows={3} className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[#aaeb00]/50 resize-none" />
+          </div>
+          <motion.button onClick={handleSubmit} className="btn-lime w-full py-3 font-black text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            Create Group →
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// =============================================
 // GROUP DETAIL
 // =============================================
 export const GroupDetailPage: React.FC = () => {
@@ -110,7 +182,6 @@ export const GroupDetailPage: React.FC = () => {
   const upcomingEvents = getUpcomingGroupEvents(group.id);
   const completedEvents = getCompletedGroupEvents(group.id);
 
-  // Members sorted by win rate descending for ranking
   const rankedMembers = [...group.members].sort((a, b) => {
     const aStats = computeMemberGroupStats(a.userId, group.id);
     const bStats = computeMemberGroupStats(b.userId, group.id);
@@ -121,18 +192,13 @@ export const GroupDetailPage: React.FC = () => {
 
   return (
     <div className="pb-24 max-w-lg mx-auto">
-      {/* Banner */}
       <div className="relative h-52 overflow-hidden">
         <img src={group.banner} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f0a1e] via-[#0f0a1e]/40 to-transparent" />
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 glass w-10 h-10 rounded-2xl flex items-center justify-center text-white"
-        >←</button>
+        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 glass w-10 h-10 rounded-2xl flex items-center justify-center text-white">←</button>
       </div>
 
       <div className="px-4 -mt-10 space-y-4">
-        {/* Group header */}
         <FadeUp>
           <div className="flex items-start gap-3">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border-2 border-white/20 shadow-lg flex-shrink-0 -mt-2" style={{ background: sportCfg.bg }}>
@@ -149,7 +215,6 @@ export const GroupDetailPage: React.FC = () => {
           </div>
         </FadeUp>
 
-        {/* Quick stats */}
         <FadeUp delay={0.05}>
           <div className="grid grid-cols-3 gap-2">
             <div className="glass rounded-2xl p-3 text-center">
@@ -167,33 +232,23 @@ export const GroupDetailPage: React.FC = () => {
           </div>
         </FadeUp>
 
-        {/* Group limit info */}
         <FadeUp delay={0.08}>
           <div className="flex items-center gap-2 text-xs text-white/40 glass rounded-2xl p-2.5">
             <span>👤 Created by {getUserById(group.members.find(m => m.role === 'creator')?.userId || '')?.name}</span>
-            <span className="text-white/20">·</span>
-            <span>🔑 Invite: <span className="font-mono text-violet-300 font-bold">{group.inviteCode}</span></span>
           </div>
         </FadeUp>
 
-        {/* Tabs */}
         <FadeUp delay={0.1}>
           <div className="flex gap-1 glass rounded-2xl p-1">
             {TABS.map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={clsx(
-                  'flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200',
-                  tab === t ? 'bg-violet-600 text-white' : 'text-white/50 hover:text-white'
-                )}
+              <button key={t} onClick={() => setTab(t)}
+                className={clsx('flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200', tab === t ? 'bg-violet-600 text-white' : 'text-white/50 hover:text-white')}
               >{t}</button>
             ))}
           </div>
         </FadeUp>
 
         <AnimatePresence mode="wait">
-          {/* ===== MEMBERS TAB ===== */}
           {tab === 'Members' && (
             <motion.div key="members" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-1">
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -205,7 +260,6 @@ export const GroupDetailPage: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ===== RANKINGS TAB ===== */}
           {tab === 'Rankings' && (
             <motion.div key="rankings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -219,13 +273,7 @@ export const GroupDetailPage: React.FC = () => {
                   const medals = ['🥇', '🥈', '🥉'];
                   const rankDisplay = i < 3 ? medals[i] : `#${i + 1}`;
                   return (
-                    <div
-                      key={member.userId}
-                      className={clsx(
-                        'flex items-center gap-3 p-3.5',
-                        i < group.members.length - 1 && 'border-b border-white/5'
-                      )}
-                    >
+                    <div key={member.userId} className={clsx('flex items-center gap-3 p-3.5', i < group.members.length - 1 && 'border-b border-white/5')}>
                       <span className="text-lg w-8 text-center">{rankDisplay}</span>
                       <Avatar src={user.avatar} name={user.name} size="sm" />
                       <div className="flex-1 min-w-0">
@@ -233,10 +281,7 @@ export const GroupDetailPage: React.FC = () => {
                         <p className="text-white/40 text-xs">{stats.matchesPlayed} matches · {stats.wins}W {stats.losses}L</p>
                       </div>
                       <div className="text-right">
-                        <p className={clsx(
-                          'font-bold text-base',
-                          stats.winRate >= 60 ? 'text-green-400' : stats.winRate >= 40 ? 'text-amber-400' : 'text-red-400'
-                        )}>
+                        <p className={clsx('font-bold text-base', stats.winRate >= 60 ? 'text-green-400' : stats.winRate >= 40 ? 'text-amber-400' : 'text-red-400')}>
                           {stats.winRate}%
                         </p>
                         <p className="text-white/40 text-[10px]">Win Rate</p>
@@ -248,10 +293,8 @@ export const GroupDetailPage: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ===== EVENTS TAB ===== */}
           {tab === 'Events' && (
             <motion.div key="events" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Upcoming */}
               <div>
                 <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <span>⚡ Upcoming ({upcomingEvents.length})</span>
@@ -278,8 +321,6 @@ export const GroupDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* History with league results */}
               <div>
                 <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <span>📜 History ({completedEvents.length})</span>
@@ -296,8 +337,6 @@ export const GroupDetailPage: React.FC = () => {
                           </div>
                           <Badge variant="glass" size="sm">✓ Done</Badge>
                         </div>
-
-                        {/* League Results */}
                         {event.leagues.length > 0 && (
                           <div className="space-y-2">
                             {event.leagues.map(league => (
@@ -335,23 +374,13 @@ export const GroupDetailPage: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ===== INVITE TAB ===== */}
           {tab === 'Invite' && (
             <motion.div key="invite" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
               <Card padding="md">
-                <p className="font-display font-bold text-white text-sm mb-3">🔗 Invite Code</p>
-                <div className="glass rounded-2xl p-4 text-center mb-3">
-                  <p className="text-3xl font-mono font-black tracking-widest text-violet-300 mb-2">{group.inviteCode}</p>
-                  <p className="text-white/40 text-xs">Share this code with friends to join</p>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="lime" className="flex-1">📋 Copy Code</Button>
-                  <Button variant="glass" className="flex-1">📤 Share Link</Button>
-                </div>
+                <p className="font-display font-bold text-white text-sm mb-3">🔗 Invite by Profile Code</p>
+                <p className="text-white/40 text-xs mb-3">Enter a friend's profile code to add them to this group</p>
+                <InviteByCodeForm groupId={group.id} />
               </Card>
-
-              {/* Members who can invite */}
               <Card padding="md">
                 <p className="font-display font-bold text-white text-sm mb-3">👤 Current Members</p>
                 <div className="flex flex-wrap gap-2">
@@ -361,13 +390,12 @@ export const GroupDetailPage: React.FC = () => {
                       <div key={m.userId} className="flex items-center gap-1.5 glass rounded-xl px-2.5 py-1.5">
                         <Avatar src={u.avatar} name={u.name} size="xs" />
                         <span className="text-white/70 text-xs">{u.name.split(' ')[0]}</span>
+                        <span className="text-white/20 text-[10px] font-mono">({u.profileCode})</span>
                       </div>
                     ) : null;
                   })}
                 </div>
               </Card>
-
-              {/* Group rules */}
               <Card padding="md">
                 <p className="font-display font-bold text-white text-sm mb-3">📋 Rules</p>
                 <div className="space-y-2">
@@ -388,18 +416,49 @@ export const GroupDetailPage: React.FC = () => {
 };
 
 // =============================================
+// INVITE BY PROFILE CODE FORM
+// =============================================
+const InviteByCodeForm: React.FC<{ groupId: string }> = ({ groupId }) => {
+  const inviteByProfileCode = useAppStore(s => s.inviteByProfileCode);
+  const [code, setCode] = useState('');
+
+  const handleInvite = () => {
+    if (!code.trim()) { toast.error('Enter a profile code'); return; }
+    inviteByProfileCode(groupId, code.trim());
+    setCode('');
+  };
+
+  return (
+    <div className="flex gap-2">
+      <input
+        value={code}
+        onChange={e => setCode(e.target.value.toUpperCase())}
+        placeholder="Enter profile code (e.g. MIRUN001)"
+        className="flex-1 glass rounded-2xl px-4 py-2.5 text-white text-sm outline-none border border-white/10 focus:border-[#aaeb00]/50"
+        onKeyDown={e => e.key === 'Enter' && handleInvite()}
+      />
+      <Button variant="lime" size="sm" onClick={handleInvite}>Invite</Button>
+    </div>
+  );
+};
+
+// =============================================
 // GROUPS LIST PAGE
 // =============================================
 export const GroupsPage: React.FC = () => {
   const navigate = useNavigate();
-  const currentUser = USERS.find(u => u.id === CURRENT_USER_ID)!;
-  const myCreatedGroups = GROUPS.filter(g => g.members.some(m => m.userId === CURRENT_USER_ID && m.role === 'creator'));
-  const myJoinedGroups = GROUPS.filter(g => g.members.some(m => m.userId === CURRENT_USER_ID && m.role !== 'creator'));
-  const discoverGroups = GROUPS.filter(g => !g.members.some(m => m.userId === CURRENT_USER_ID));
-  const canCreateMore = currentUser.createdGroups.length < 3;
-  const canJoinMore = currentUser.joinedGroups.length < 3;
+  const currentUserId = useAppStore(s => s.currentUserId);
+  const joinGroup = useAppStore(s => s.joinGroup);
+  const [showCreate, setShowCreate] = useState(false);
 
-  const overall = getOverallWinRate(CURRENT_USER_ID);
+  const currentUser = currentUserId ? getUserById(currentUserId) : null;
+  const myCreatedGroups = GROUPS.filter(g => g.members.some(m => m.userId === currentUserId && m.role === 'creator'));
+  const myJoinedGroups = GROUPS.filter(g => g.members.some(m => m.userId === currentUserId && m.role !== 'creator'));
+  const discoverGroups = GROUPS.filter(g => !g.members.some(m => m.userId === currentUserId));
+  const canCreateMore = currentUser ? currentUser.createdGroups.length < 3 : false;
+  const canJoinMore = currentUser ? currentUser.joinedGroups.length < 3 : false;
+
+  const overall = getOverallWinRate(currentUserId || '');
 
   return (
     <div className="pb-24 max-w-lg mx-auto px-4 pt-4 space-y-6">
@@ -416,21 +475,19 @@ export const GroupsPage: React.FC = () => {
         </div>
       </FadeUp>
 
-      {/* Limits */}
       <FadeUp delay={0.05}>
         <div className="glass rounded-2xl p-3 flex items-center justify-between">
           <div>
             <p className="text-white/60 text-xs">Created / Joined limit</p>
-            <p className="font-bold text-white text-sm">{currentUser.createdGroups.length}/3 created · {currentUser.joinedGroups.length}/3 joined</p>
+            <p className="font-bold text-white text-sm">{currentUser?.createdGroups.length || 0}/3 created · {currentUser?.joinedGroups.length || 0}/3 joined</p>
           </div>
         </div>
       </FadeUp>
 
-      {/* Created groups */}
       <FadeUp delay={0.1}>
         <SectionHeader
           title="👑 Created by you"
-          action={canCreateMore ? <Button variant="lime" size="sm" onClick={() => navigate('/groups')}>+ New Group</Button> : <Badge variant="glass" size="sm">Limit reached</Badge>}
+          action={canCreateMore ? <Button variant="lime" size="sm" onClick={() => setShowCreate(true)}>+ New Group</Button> : <Badge variant="glass" size="sm">Limit reached</Badge>}
           className="mb-3"
         />
         <StaggerList className="space-y-3">
@@ -450,9 +507,7 @@ export const GroupsPage: React.FC = () => {
                         <p className="font-display font-bold text-white">{group.name}</p>
                         <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
                       </div>
-                      <div className="ml-auto">
-                        <Badge variant="amber">👑 Creator</Badge>
-                      </div>
+                      <div className="ml-auto"><Badge variant="amber">👑 Creator</Badge></div>
                     </div>
                   </div>
                 </Card>
@@ -468,14 +523,11 @@ export const GroupsPage: React.FC = () => {
         </StaggerList>
       </FadeUp>
 
-      {/* Joined groups */}
       <FadeUp delay={0.15}>
         <SectionHeader title="⚡ Joined" className="mb-3" />
         <StaggerList className="space-y-3">
           {myJoinedGroups.map(group => {
             const cfg = SPORT_CONFIG[group.sport];
-            const myRole = group.members.find(m => m.userId === CURRENT_USER_ID)?.role;
-            const roleCfg = myRole ? ROLE_CONFIG[myRole] : null;
             return (
               <StaggerItem key={group.id}>
                 <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
@@ -490,11 +542,6 @@ export const GroupsPage: React.FC = () => {
                         <p className="font-display font-bold text-white">{group.name}</p>
                         <p className="text-white/50 text-xs">{group.memberCount} members · {cfg.label}</p>
                       </div>
-                      {roleCfg && (
-                        <span className="ml-auto text-xs font-semibold px-2 py-1 rounded-full" style={{ background: `${roleCfg.color}20`, color: roleCfg.color }}>
-                          {roleCfg.emoji} {roleCfg.label}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </Card>
@@ -510,7 +557,6 @@ export const GroupsPage: React.FC = () => {
         </StaggerList>
       </FadeUp>
 
-      {/* Discover */}
       {discoverGroups.length > 0 && canJoinMore && (
         <FadeUp delay={0.2}>
           <SectionHeader title="🔍 Discover Groups" subtitle="Explore and join" className="mb-3" />
@@ -528,7 +574,7 @@ export const GroupsPage: React.FC = () => {
                         <p className="font-bold text-white">{group.name}</p>
                         <p className="text-white/50 text-xs">{group.memberCount} members · {cfg.label}</p>
                       </div>
-                      <Button variant="ghost" size="sm">Join</Button>
+                      <Button variant="ghost" size="sm" onClick={() => joinGroup(group.id)}>Join</Button>
                     </div>
                   </Card>
                 </StaggerItem>
@@ -537,6 +583,8 @@ export const GroupsPage: React.FC = () => {
           </StaggerList>
         </FadeUp>
       )}
+
+      <CreateGroupModal open={showCreate} onClose={() => setShowCreate(false)} />
     </div>
   );
 };

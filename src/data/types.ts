@@ -21,6 +21,10 @@ export interface User {
   id: string;
   name: string;
   username: string;
+  email: string;
+  phone: string;
+  password: string;
+  profileCode: string;
   avatar: string;
   coverImage: string;
   bio: string;
@@ -62,7 +66,6 @@ export interface Group {
   rules: string[];
   isPrivate: boolean;
   tags: string[];
-  inviteCode: string;
   upcomingEvents: number;
   totalEvents: number;
 }

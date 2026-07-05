@@ -62,10 +62,10 @@ export const LandingPage: React.FC = () => {
           ))}
         </div>
         <motion.button
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/login')}
           className="btn-lime text-sm px-5 py-2.5 font-bold"
           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-        >Enter App →</motion.button>
+        >Sign In →</motion.button>
       </nav>
 
       {/* HERO */}
@@ -114,7 +114,7 @@ export const LandingPage: React.FC = () => {
             className="flex flex-col sm:flex-row gap-3 items-center justify-center"
           >
             <motion.button
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/login')}
               className="btn-lime text-base px-8 py-4 font-black"
               whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
             >Start Your Weekend 🏸</motion.button>
@@ -361,7 +361,7 @@ export const LandingPage: React.FC = () => {
           </h2>
           <p className="text-white/40 text-lg mb-8">Create your group in 60 seconds. No credit card needed.</p>
           <motion.button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/login')}
             className="btn-lime text-lg px-10 py-4 font-black mx-auto block"
             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
           >Start for Free — It's Weekend Time 🏸</motion.button>

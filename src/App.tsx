@@ -5,6 +5,8 @@ import { Toaster } from 'react-hot-toast';
 
 import { BottomNav, AppHeader } from './components/layout/Navigation';
 import { LandingPage } from './features/landing/LandingPage';
+import { LoginPage } from './features/auth/LoginPage';
+import { SignupPage } from './features/auth/SignupPage';
 import { HomePage } from './features/home/HomePage';
 import { EventsPage, EventDetailPage } from './features/events/EventsPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
@@ -12,8 +14,8 @@ import { LeaderboardPage } from './features/leaderboard/LeaderboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { GroupsPage, GroupDetailPage } from './features/groups/GroupsPage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
+import { useAppStore } from './store/useAppStore';
 
-// Page wrapper with consistent page transition
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
     initial={{ opacity: 0, y: 8 }}
@@ -33,13 +35,19 @@ const PageSkeleton = () => (
   </div>
 );
 
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isLoggedIn = useAppStore(s => s.isLoggedIn);
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isLanding = location.pathname === '/' || location.pathname === '/landing';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   return (
     <div className="min-h-screen" style={{ background: '#080808' }}>
-      {/* Persistent background glow orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-150px] left-[-80px] w-[600px] h-[600px] rounded-full blur-[180px]"
           style={{ background: 'radial-gradient(circle, rgba(170,235,0,0.07), transparent)' }} />
@@ -49,34 +57,33 @@ const AppContent: React.FC = () => {
           style={{ background: 'radial-gradient(circle, rgba(170,235,0,0.04), transparent)' }} />
       </div>
 
-      {/* App header (not on landing) */}
-      {!isLanding && <AppHeader />}
+      {!isLanding && !isAuthPage && <AppHeader />}
 
-      {/* Main content */}
-      <main className={isLanding ? '' : 'safe-bottom'}>
+      <main className={isLanding || isAuthPage ? '' : 'safe-bottom'}>
         <Suspense fallback={<PageSkeleton />}>
           <AnimatePresence mode="wait" initial={false}>
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
-              <Route path="/home" element={<PageWrapper><HomePage /></PageWrapper>} />
-              <Route path="/events" element={<PageWrapper><EventsPage /></PageWrapper>} />
-              <Route path="/events/:id" element={<PageWrapper><EventDetailPage /></PageWrapper>} />
-              <Route path="/calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
-              <Route path="/leaderboard" element={<PageWrapper><LeaderboardPage /></PageWrapper>} />
-              <Route path="/profile" element={<PageWrapper><ProfilePage /></PageWrapper>} />
-              <Route path="/groups" element={<PageWrapper><GroupsPage /></PageWrapper>} />
-              <Route path="/groups/:id" element={<PageWrapper><GroupDetailPage /></PageWrapper>} />
-              <Route path="/notifications" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
+              <Route path="/landing" element={<Navigate to="/" replace />} />
+              <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
+              <Route path="/signup" element={<PageWrapper><SignupPage /></PageWrapper>} />
+              <Route path="/home" element={<PageWrapper><ProtectedRoute><HomePage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/events" element={<PageWrapper><ProtectedRoute><EventsPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/events/:id" element={<PageWrapper><ProtectedRoute><EventDetailPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/calendar" element={<PageWrapper><ProtectedRoute><CalendarPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/leaderboard" element={<PageWrapper><ProtectedRoute><LeaderboardPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/profile" element={<PageWrapper><ProtectedRoute><ProfilePage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/groups" element={<PageWrapper><ProtectedRoute><GroupsPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/groups/:id" element={<PageWrapper><ProtectedRoute><GroupDetailPage /></ProtectedRoute></PageWrapper>} />
+              <Route path="/notifications" element={<PageWrapper><ProtectedRoute><NotificationsPage /></ProtectedRoute></PageWrapper>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>
         </Suspense>
       </main>
 
-      {/* Bottom navigation */}
       <BottomNav />
 
-      {/* Toast notifications */}
       <Toaster
         position="top-center"
         toastOptions={{

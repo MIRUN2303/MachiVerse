@@ -1,6 +1,7 @@
 import type { User, Group, Event, LeaderboardEntry, Notification } from './types';
 
-export const CURRENT_USER_ID = 'u1';
+export let CURRENT_USER_ID: string | null = null;
+export const setCurrentUserId = (id: string | null) => { CURRENT_USER_ID = id; };
 
 export const SPORT_CONFIG = {
   badminton:  { emoji: '🏸', label: 'Badminton',    color: '#aaeb00', bg: 'rgba(170,235,0,0.1)' },
@@ -47,6 +48,10 @@ export const USERS: User[] = [
     id: 'u1',
     name: 'Mirun Raj',
     username: 'mirunraj',
+    email: 'mirun@email.com',
+    phone: '+919999999001',
+    password: 'pass123',
+    profileCode: 'MIRUN001',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=mirun&backgroundColor=b6e3f4',
     coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
     bio: 'Badminton fanatic 🏸 Weekend warrior. Always up for a match.',
@@ -77,6 +82,10 @@ export const USERS: User[] = [
     id: 'u2',
     name: 'Arjun Sharma',
     username: 'arjunshm',
+    email: 'arjun@email.com',
+    phone: '+919999999002',
+    password: 'pass123',
+    profileCode: 'ARJUN002',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=arjun&backgroundColor=ffdfbf',
     coverImage: 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800&q=80',
     bio: 'Cricket captain 🏏. Love the game, love the team.',
@@ -107,6 +116,10 @@ export const USERS: User[] = [
     id: 'u3',
     name: 'Priya Nair',
     username: 'priyanair',
+    email: 'priya@email.com',
+    phone: '+919999999003',
+    password: 'pass123',
+    profileCode: 'PRIYA003',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=priya&backgroundColor=d1d4f9',
     coverImage: 'https://images.unsplash.com/photo-1502209524164-acea936639a2?w=800&q=80',
     bio: 'Cycling enthusiast 🚴 Coffee addict ☕ Weekend explorer.',
@@ -137,6 +150,10 @@ export const USERS: User[] = [
     id: 'u4',
     name: 'Karthik Rajan',
     username: 'karthikrajan',
+    email: 'karthik@email.com',
+    phone: '+919999999004',
+    password: 'pass123',
+    profileCode: 'KARTHIK004',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=karthik&backgroundColor=c0aede',
     coverImage: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&q=80',
     bio: 'Football lover ⚽ Midfielder. Team player always.',
@@ -167,6 +184,10 @@ export const USERS: User[] = [
     id: 'u5',
     name: 'Sneha Menon',
     username: 'snehamenon',
+    email: 'sneha@email.com',
+    phone: '+919999999005',
+    password: 'pass123',
+    profileCode: 'SNEHA005',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=sneha&backgroundColor=ffd5dc',
     coverImage: 'https://images.unsplash.com/photo-1510116877040-cf89bc0cf9f5?w=800&q=80',
     bio: 'Trekking queen 🥾 Nature > everything. Weekend adventurer.',
@@ -197,6 +218,10 @@ export const USERS: User[] = [
     id: 'u6',
     name: 'Rahul Dev',
     username: 'rahuldev',
+    email: 'rahul@email.com',
+    phone: '+919999999006',
+    password: 'pass123',
+    profileCode: 'RAHUL006',
     avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=rahul&backgroundColor=b6e3f4',
     coverImage: '',
     bio: 'All-rounder 🎯 Jack of all sports.',
@@ -246,7 +271,6 @@ export const GROUPS: Group[] = [
     rules: ['Be there on time. Doors at 7:00 PM sharp.', 'Bring your own shuttles (2 per person).', 'Respect all players regardless of skill.', 'Phone goes on silent during matches.', 'Stay for the full session or inform ahead.'],
     isPrivate: true,
     tags: ['badminton', 'competitive', 'weekends', 'friends'],
-    inviteCode: 'SMASH2024',
     upcomingEvents: 2,
     totalEvents: 48,
   },
@@ -268,7 +292,6 @@ export const GROUPS: Group[] = [
     rules: ['Safety first, always.', 'Inform if you\'re skipping any section.', 'Help fellow members on difficult trails.', 'Leave no trace — pack out what you pack in.'],
     isPrivate: false,
     tags: ['trekking', 'cycling', 'outdoors', 'adventure'],
-    inviteCode: 'TRAIL2024',
     upcomingEvents: 2,
     totalEvents: 22,
   },
@@ -518,8 +541,12 @@ export const NOTIFICATIONS: Notification[] = [
 ];
 
 export const getUserById = (id: string) => USERS.find(u => u.id === id);
+export const getUserByEmail = (email: string) => USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+export const getUserByPhone = (phone: string) => USERS.find(u => u.phone === phone);
+export const getUserByProfileCode = (code: string) => USERS.find(u => u.profileCode.toUpperCase() === code.toUpperCase());
 export const getEventById = (id: string) => EVENTS.find(e => e.id === id);
 export const getGroupById = (id: string) => GROUPS.find(g => g.id === id);
+export const generateId = () => `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 export const getGroupEvents = (groupId: string) => EVENTS.filter(e => e.groupId === groupId);
 

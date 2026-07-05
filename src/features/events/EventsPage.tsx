@@ -142,7 +142,7 @@ export const EventDetailPage: React.FC = () => {
             {ATTENDANCE_OPTIONS.map(opt => (
               <motion.button
                 key={opt.status}
-                onClick={() => updateAttendance(event.id, currentUserId, opt.status)}
+                onClick={() => currentUserId && updateAttendance(event.id, currentUserId, opt.status)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
                   myAttendance?.status === opt.status
                     ? 'text-white'

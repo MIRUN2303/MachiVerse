@@ -38,7 +38,7 @@ const OPTS: { status: AttendanceStatus; label: string; emoji: string; color: str
   { status: 'not_coming', label: 'Out',   emoji: '❌', color: '#ef4444' },
 ];
 
-const AttendanceRow: React.FC<{ event: Event; currentUserId: string }> = ({ event, currentUserId }) => {
+const AttendanceRow: React.FC<{ event: Event; currentUserId: string | null }> = ({ event, currentUserId }) => {
   const updateAttendance = useAppStore(s => s.updateAttendance);
   const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
   const coming = event.attendance.filter(a => a.status === 'coming').length;
@@ -49,7 +49,7 @@ const AttendanceRow: React.FC<{ event: Event; currentUserId: string }> = ({ even
         const isActive = myStatus === opt.status;
         return (
           <motion.button key={opt.status}
-            onClick={e => { e.stopPropagation(); updateAttendance(event.id, currentUserId, opt.status); }}
+            onClick={e => { e.stopPropagation(); currentUserId && updateAttendance(event.id, currentUserId, opt.status); }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all"
             style={isActive
               ? { background: `${opt.color}18`, borderColor: opt.color, color: opt.color }

@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const unreadCount = useAppStore(s => s.unreadCount());
-  if (location.pathname === '/' || location.pathname === '/landing') return null;
+  if (location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/login' || location.pathname === '/signup') return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
@@ -75,7 +75,7 @@ export const BottomNav: React.FC = () => {
 // =============================================
 export const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   const location = useLocation();
-  if (location.pathname === '/' || location.pathname === '/landing') return null;
+  if (location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/login' || location.pathname === '/signup') return null;
   return (
     <motion.button
       className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full text-black text-2xl font-black flex items-center justify-center focus:outline-none"
@@ -95,7 +95,7 @@ export const AppHeader: React.FC<{
 }> = ({ title, subtitle, rightAction }) => {
   const location = useLocation();
   const notifCount = useAppStore(s => s.unreadCount());
-  if (location.pathname === '/' || location.pathname === '/landing') return null;
+  if (location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/login' || location.pathname === '/signup') return null;
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3"

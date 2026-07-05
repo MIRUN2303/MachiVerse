@@ -6,17 +6,21 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { USERS, SPORT_CONFIG, BADGE_CONFIG, GROUPS, computeMemberGroupStats, getOverallWinRate, CURRENT_USER_ID } from '../../data/mockData';
+import { USERS, SPORT_CONFIG, BADGE_CONFIG, GROUPS, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
 import { Card, Avatar, Button, StatCard, ProgressBar } from '../../components/ui';
 import { FadeUp, AnimatedNumber } from '../../components/motion';
 import { clsx } from 'clsx';
+import { useAppStore } from '../../store/useAppStore';
 
 const TABS = ['Stats', 'Badges', 'History', 'Sports', 'Groups'];
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('Stats');
-  const user = USERS.find(u => u.id === CURRENT_USER_ID)!;
+  const currentUserId = useAppStore(s => s.currentUserId);
+  const logout = useAppStore(s => s.logout);
+  const user = USERS.find(u => u.id === currentUserId);
+  if (!user) return null;
   const { stats } = user;
 
   const createdGroups = GROUPS.filter(g => user.createdGroups.includes(g.id));
@@ -70,7 +74,20 @@ export const ProfilePage: React.FC = () => {
               <p className="text-white/50 text-sm">@{user.username}</p>
               {user.bio && <p className="text-white/70 text-sm mt-1 max-w-xs">{user.bio}</p>}
             </div>
-            <Button variant="glass" size="sm">Edit</Button>
+            <div className="flex gap-2">
+              <Button variant="glass" size="sm" onClick={() => { logout(); navigate('/login'); }}>Logout</Button>
+            </div>
+          </div>
+
+          <div className="glass rounded-2xl p-3 mt-3 space-y-2">
+            <div className="flex items-center gap-2 text-white/60 text-xs">
+              <span>📧 {user.email}</span>
+              <span className="text-white/20">|</span>
+              <span>📱 {user.phone}</span>
+            </div>
+            <div className="flex items-center gap-2 text-white/60 text-xs">
+              <span>🔑 Profile Code: <span className="font-mono font-bold text-violet-300">{user.profileCode}</span></span>
+            </div>
           </div>
 
           <div className="glass rounded-2xl p-3 mt-3">
