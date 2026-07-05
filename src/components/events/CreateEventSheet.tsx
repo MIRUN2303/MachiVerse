@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import { GROUPS, SPORT_CONFIG } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/mockData';
 import { Button } from '../ui';
 
 // =============================================
@@ -26,16 +26,16 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   const navigate = useNavigate();
   const createEvent = useAppStore(s => s.createEvent);
   const currentUserId = useAppStore(s => s.currentUserId);
+  const storeGroups = useAppStore(s => s.groups);
 
-  // Groups where the current user is creator or admin
-  const myGroups = GROUPS.filter(g =>
+  const myGroups = storeGroups.filter(g =>
     g.members.some(m => m.userId === currentUserId && (m.role === 'creator' || m.role === 'admin' || m.role === 'member'))
   );
 
   const [groupId, setGroupId] = useState(preselectedGroupId || myGroups[0]?.id || '');
   const [title, setTitle] = useState('');
-  const [sport, setSport] = useState(GROUPS.find(g => g.id === groupId)?.sport || 'badminton');
-  const [date, setDate] = useState('');
+  const [sport, setSport] = useState(storeGroups.find(g => g.id === (preselectedGroupId || myGroups[0]?.id))?.sport || 'badminton');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('19:00');
   const [endTime, setEndTime] = useState('22:00');
   const [venue, setVenue] = useState('');
@@ -45,14 +45,13 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   const [step, setStep] = useState<'details' | 'schedule'>('details');
   const [loading, setLoading] = useState(false);
 
-  // When group changes, update default sport
   const handleGroupChange = (gid: string) => {
     setGroupId(gid);
-    const grp = GROUPS.find(g => g.id === gid);
+    const grp = storeGroups.find(g => g.id === gid);
     if (grp) setSport(grp.sport as any);
   };
 
-  const selectedGroup = GROUPS.find(g => g.id === groupId);
+  const selectedGroup = storeGroups.find(g => g.id === groupId);
   const sportCfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
 
   const canProceed = title.trim().length > 0 && groupId;
@@ -61,12 +60,11 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   const handleCreate = async () => {
     if (!canSubmit) return;
     setLoading(true);
-    // Small delay for UX
     await new Promise(r => setTimeout(r, 400));
     const newId = createEvent({ groupId, title, sport, date, time, endTime, venue, description, maxSlots, isRecurring });
     setLoading(false);
     onClose();
-    navigate(`/events/${newId}`);
+    if (newId) navigate(`/events/${newId}`);
   };
 
   const resetAndClose = () => {
