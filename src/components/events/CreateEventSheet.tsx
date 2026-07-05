@@ -1,0 +1,400 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../../store/useAppStore';
+import { GROUPS, SPORT_CONFIG } from '../../data/mockData';
+import { Button } from '../ui';
+
+// =============================================
+// SPORT SELECTOR
+// =============================================
+const SPORT_OPTIONS = [
+  'badminton', 'cricket', 'football', 'basketball', 'volleyball',
+  'cycling', 'trekking', 'running', 'swimming', 'cafe', 'movie', 'gaming', 'custom',
+] as const;
+
+interface CreateEventSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Pre-select a group (when opened from within a group) */
+  preselectedGroupId?: string;
+}
+
+export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
+  isOpen, onClose, preselectedGroupId,
+}) => {
+  const navigate = useNavigate();
+  const createEvent = useAppStore(s => s.createEvent);
+  const currentUserId = useAppStore(s => s.currentUserId);
+
+  // Groups where the current user is creator or admin
+  const myGroups = GROUPS.filter(g =>
+    g.members.some(m => m.userId === currentUserId && (m.role === 'creator' || m.role === 'admin' || m.role === 'member'))
+  );
+
+  const [groupId, setGroupId] = useState(preselectedGroupId || myGroups[0]?.id || '');
+  const [title, setTitle] = useState('');
+  const [sport, setSport] = useState(GROUPS.find(g => g.id === groupId)?.sport || 'badminton');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('19:00');
+  const [endTime, setEndTime] = useState('22:00');
+  const [venue, setVenue] = useState('');
+  const [description, setDescription] = useState('');
+  const [maxSlots, setMaxSlots] = useState(12);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [step, setStep] = useState<'details' | 'schedule'>('details');
+  const [loading, setLoading] = useState(false);
+
+  // When group changes, update default sport
+  const handleGroupChange = (gid: string) => {
+    setGroupId(gid);
+    const grp = GROUPS.find(g => g.id === gid);
+    if (grp) setSport(grp.sport as any);
+  };
+
+  const selectedGroup = GROUPS.find(g => g.id === groupId);
+  const sportCfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
+
+  const canProceed = title.trim().length > 0 && groupId;
+  const canSubmit = canProceed && date && venue.trim().length > 0;
+
+  const handleCreate = async () => {
+    if (!canSubmit) return;
+    setLoading(true);
+    // Small delay for UX
+    await new Promise(r => setTimeout(r, 400));
+    const newId = createEvent({ groupId, title, sport, date, time, endTime, venue, description, maxSlots, isRecurring });
+    setLoading(false);
+    onClose();
+    navigate(`/events/${newId}`);
+  };
+
+  const resetAndClose = () => {
+    setStep('details');
+    setTitle('');
+    setVenue('');
+    setDescription('');
+    onClose();
+  };
+
+  // Minimum date = today
+  const minDate = new Date().toISOString().split('T')[0];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            className="fixed inset-0 z-50"
+            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={resetAndClose}
+          />
+
+          {/* Sheet */}
+          <motion.div
+            className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto rounded-t-[2.5rem] overflow-hidden"
+            style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none', maxHeight: '92dvh' }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 38 }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+            </div>
+
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(92dvh - 24px)' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-4 pt-1">
+                <div>
+                  <h2 className="font-display font-black text-xl text-white">New Event</h2>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    {selectedGroup ? `in ${selectedGroup.name}` : 'Select a group first'}
+                  </p>
+                </div>
+                <button onClick={resetAndClose}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>✕</button>
+              </div>
+
+              {/* Step indicator */}
+              <div className="flex items-center gap-2 px-5 mb-5">
+                {['details', 'schedule'].map((s, i) => (
+                  <React.Fragment key={s}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center transition-all"
+                        style={step === s || (i === 0 && step === 'schedule')
+                          ? { background: '#aaeb00', color: '#000' }
+                          : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}>
+                        {i + 1}
+                      </span>
+                      <span className="text-xs font-semibold capitalize"
+                        style={{ color: step === s ? '#aaeb00' : 'rgba(255,255,255,0.35)' }}>
+                        {s}
+                      </span>
+                    </div>
+                    {i === 0 && <div className="flex-1 h-px" style={{ background: step === 'schedule' ? 'rgba(170,235,0,0.4)' : 'rgba(255,255,255,0.06)' }} />}
+                  </React.Fragment>
+                ))}
+              </div>
+
+              <div className="px-5 pb-8 space-y-4">
+                <AnimatePresence mode="wait">
+                  {/* ===== STEP 1: DETAILS ===== */}
+                  {step === 'details' && (
+                    <motion.div key="details"
+                      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4">
+
+                      {/* Group selector */}
+                      {!preselectedGroupId && (
+                        <div>
+                          <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>GROUP</label>
+                          <div className="flex gap-2 overflow-x-auto scrollbar-hidden pb-1">
+                            {myGroups.map(g => (
+                              <motion.button key={g.id}
+                                onClick={() => handleGroupChange(g.id)}
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-2xl whitespace-nowrap text-sm font-semibold transition-all border flex-shrink-0"
+                                style={groupId === g.id
+                                  ? { background: 'rgba(170,235,0,0.1)', borderColor: '#aaeb00', color: '#aaeb00' }
+                                  : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
+                                }
+                                whileTap={{ scale: 0.97 }}
+                              >
+                                <span>{g.logo}</span> {g.name}
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Event title */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>EVENT TITLE *</label>
+                        <input
+                          type="text"
+                          value={title}
+                          onChange={e => setTitle(e.target.value)}
+                          placeholder="e.g. Saturday Badminton Session"
+                          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none transition-all"
+                          style={{
+                            background: '#161616',
+                            border: title ? '1px solid rgba(170,235,0,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                          }}
+                          autoFocus
+                        />
+                      </div>
+
+                      {/* Sport */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>SPORT / ACTIVITY *</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {SPORT_OPTIONS.slice(0, 8).map(s => {
+                            const cfg = SPORT_CONFIG[s];
+                            const isActive = sport === s;
+                            return (
+                              <motion.button key={s}
+                                onClick={() => setSport(s as any)}
+                                className="flex flex-col items-center gap-1 p-2.5 rounded-2xl border text-center transition-all"
+                                style={isActive
+                                  ? { background: `${cfg.color}18`, borderColor: cfg.color, boxShadow: `0 0 12px ${cfg.color}30` }
+                                  : { background: '#161616', borderColor: 'rgba(255,255,255,0.06)' }
+                                }
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <span className="text-xl">{cfg.emoji}</span>
+                                <span className="text-[10px] font-semibold leading-tight"
+                                  style={{ color: isActive ? cfg.color : 'rgba(255,255,255,0.4)' }}>
+                                  {cfg.label.split(' ')[0]}
+                                </span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 mt-2">
+                          {SPORT_OPTIONS.slice(8).map(s => {
+                            const cfg = SPORT_CONFIG[s];
+                            const isActive = sport === s;
+                            return (
+                              <motion.button key={s}
+                                onClick={() => setSport(s as any)}
+                                className="flex flex-col items-center gap-1 p-2.5 rounded-2xl border text-center transition-all"
+                                style={isActive
+                                  ? { background: `${cfg.color}18`, borderColor: cfg.color }
+                                  : { background: '#161616', borderColor: 'rgba(255,255,255,0.06)' }
+                                }
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <span className="text-xl">{cfg.emoji}</span>
+                                <span className="text-[10px] font-semibold leading-tight"
+                                  style={{ color: isActive ? cfg.color : 'rgba(255,255,255,0.4)' }}>
+                                  {cfg.label.split(' ')[0]}
+                                </span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Max slots */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>MAX PLAYERS</label>
+                        <div className="flex items-center gap-3">
+                          {[6, 8, 10, 12, 16, 20].map(n => (
+                            <motion.button key={n}
+                              onClick={() => setMaxSlots(n)}
+                              className="flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all"
+                              style={maxSlots === n
+                                ? { background: 'rgba(170,235,0,0.1)', borderColor: '#aaeb00', color: '#aaeb00' }
+                                : { background: '#161616', borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }
+                              }
+                              whileTap={{ scale: 0.95 }}>
+                              {n}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>DESCRIPTION (optional)</label>
+                        <textarea
+                          value={description}
+                          onChange={e => setDescription(e.target.value)}
+                          placeholder="What's special about this event?"
+                          rows={3}
+                          className="w-full rounded-2xl px-4 py-3 text-sm text-white resize-none outline-none"
+                          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
+                        />
+                      </div>
+
+                      <Button
+                        variant="lime" fullWidth size="lg"
+                        disabled={!canProceed}
+                        onClick={() => setStep('schedule')}
+                      >
+                        Next: Schedule →
+                      </Button>
+                    </motion.div>
+                  )}
+
+                  {/* ===== STEP 2: SCHEDULE ===== */}
+                  {step === 'schedule' && (
+                    <motion.div key="schedule"
+                      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4">
+
+                      {/* Summary pill */}
+                      <div className="flex items-center gap-2 p-3 rounded-2xl"
+                        style={{ background: 'rgba(170,235,0,0.06)', border: '1px solid rgba(170,235,0,0.2)' }}>
+                        <span className="text-2xl">{sportCfg.emoji}</span>
+                        <div>
+                          <p className="font-bold text-white text-sm">{title}</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedGroup?.name} · {sportCfg.label} · {maxSlots} max</p>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>DATE *</label>
+                        <input
+                          type="date"
+                          value={date}
+                          min={minDate}
+                          onChange={e => setDate(e.target.value)}
+                          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none appearance-none"
+                          style={{
+                            background: '#161616',
+                            border: date ? '1px solid rgba(170,235,0,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                            colorScheme: 'dark',
+                          }}
+                        />
+                      </div>
+
+                      {/* Time */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>START TIME *</label>
+                          <input
+                            type="time"
+                            value={time}
+                            onChange={e => setTime(e.target.value)}
+                            className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+                            style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>END TIME</label>
+                          <input
+                            type="time"
+                            value={endTime}
+                            onChange={e => setEndTime(e.target.value)}
+                            className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+                            style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Venue */}
+                      <div>
+                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>VENUE *</label>
+                        <input
+                          type="text"
+                          value={venue}
+                          onChange={e => setVenue(e.target.value)}
+                          placeholder="e.g. Sportorium Court 2"
+                          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+                          style={{
+                            background: '#161616',
+                            border: venue ? '1px solid rgba(170,235,0,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                          }}
+                        />
+                      </div>
+
+                      {/* Recurring toggle */}
+                      <div className="flex items-center justify-between p-4 rounded-2xl"
+                        style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div>
+                          <p className="font-semibold text-white text-sm">Recurring Event</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Repeat this event weekly</p>
+                        </div>
+                        <motion.button
+                          onClick={() => setIsRecurring(!isRecurring)}
+                          className="w-12 h-7 rounded-full relative transition-colors"
+                          style={{ background: isRecurring ? '#aaeb00' : 'rgba(255,255,255,0.12)' }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <motion.span
+                            className="absolute top-1 w-5 h-5 rounded-full bg-black shadow-lg"
+                            animate={{ left: isRecurring ? 26 : 4 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          />
+                        </motion.button>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Button variant="ghost" size="lg" className="flex-1" onClick={() => setStep('details')}>← Back</Button>
+                        <Button
+                          variant="lime" size="lg" className="flex-2 flex-1"
+                          disabled={!canSubmit} loading={loading}
+                          onClick={handleCreate}
+                        >
+                          Create Event 🚀
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
