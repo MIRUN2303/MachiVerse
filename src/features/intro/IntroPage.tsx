@@ -59,7 +59,7 @@ export const IntroPage: React.FC = () => {
               className="font-logo text-5xl tracking-[0.08em] text-white/85 select-none"
               style={{ letterSpacing: '0.08em' }}
             >
-              Whos<span className="text-white text-6xl">I</span>n
+              Whos<span className="text-[#00ff41] text-6xl" style={{ textShadow: '0 0 20px rgba(0,255,65,0.5)' }}>I</span>n
             </motion.span>
           </motion.div>
         )}
@@ -80,7 +80,7 @@ export const IntroPage: React.FC = () => {
               className="font-logo text-5xl tracking-[0.08em] text-white/85 select-none"
               style={{ letterSpacing: '0.08em' }}
             >
-              Whos<span className="text-white text-6xl">I</span>n
+              Whos<span className="text-[#00ff41] text-6xl" style={{ textShadow: '0 0 20px rgba(0,255,65,0.5)' }}>I</span>n
             </motion.span>
             <motion.div
               initial={{ width: 0 }}
