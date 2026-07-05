@@ -261,7 +261,8 @@ export const EventDetailPage: React.FC = () => {
           </FadeUp>
         )}
 
-        {/* LEAGUES / SCORES */}
+        {/* LEAGUES / SCORES — only visible when live */}
+        {event.status === 'live' && (
         <FadeUp delay={0.15}>
           <SectionHeader title="Leagues & Scores" className="mb-3" />
           {event.leagues.length === 0 ? (
@@ -476,6 +477,7 @@ export const EventDetailPage: React.FC = () => {
             })
           )}
         </FadeUp>
+        )}
 
         {/* GALLERY */}
         <FadeUp delay={0.2}>
