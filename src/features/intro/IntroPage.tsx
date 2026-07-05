@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export const IntroPage: React.FC = () => {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<'logo' | 'tagline' | 'done'>('logo');
+  const [phase, setPhase] = useState<'logo' | 'tagline' | 'fadeout'>('logo');
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('tagline'), 2800);
-    const t2 = setTimeout(() => setPhase('done'), 4200);
-    const t3 = setTimeout(() => navigate('/home', { replace: true }), 5600);
+    const t2 = setTimeout(() => setPhase('fadeout'), 4200);
+    const t3 = setTimeout(() => navigate('/home', { replace: true }), 5400);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [navigate]);
 
@@ -31,16 +31,13 @@ export const IntroPage: React.FC = () => {
               <feDisplacementMap in="SourceGraphic" in2="noise" scale="35" xChannelSelector="R" yChannelSelector="G" />
             </filter>
           </defs>
-          {/* Main ribbon sweeps */}
           <path d="M-50,100 Q80,-20 200,80 T450,50 T700,120 T900,60" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" filter="url(#ribbonWobble)" />
           <path d="M-50,250 Q100,150 220,250 T480,200 T720,280 T900,220" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" filter="url(#ribbonWobble)" />
           <path d="M-50,450 Q120,320 250,430 T520,370 T760,460 T900,390" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.6" filter="url(#ribbonWobble)" />
           <path d="M-50,600 Q60,500 180,590 T440,530 T680,620 T900,550" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="0.4" filter="url(#ribbonWobble)" />
-          {/* Cross ribbons */}
           <path d="M100,-50 Q200,60 110,180 T300,320 T180,470 T380,620" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.7" filter="url(#ribbonWobble)" />
           <path d="M300,-50 Q420,80 330,220 T540,380 T410,540 T600,700" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" filter="url(#ribbonWobble)" />
         </svg>
-        {/* Grain texture */}
         <div className="absolute inset-0 opacity-[0.035] mix-blend-overlay"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
@@ -96,11 +93,25 @@ export const IntroPage: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8, duration: 0.6 }}
-              className="text-[11px] text-white/30 font-medium tracking-[0.3em] uppercase"
+              className="text-[11px] font-semibold tracking-[0.35em] uppercase select-none"
+              style={{ color: 'rgba(255,255,255,0.3)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
               Play. Compete. Conquer.
             </motion.p>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cinematic fade-out overlay */}
+      <AnimatePresence>
+        {phase === 'fadeout' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 z-20"
+            style={{ background: '#000' }}
+          />
         )}
       </AnimatePresence>
     </div>
