@@ -15,10 +15,16 @@ export const IntroPage: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: '#000' }}>
+      style={{
+        backgroundImage: `url('/bg-intro.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}>
+      {/* Dark overlay */}
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
       {/* Ribbony texture overlay */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full opacity-[0.08]" viewBox="0 0 400 800" preserveAspectRatio="none">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden mix-blend-overlay opacity-40">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
           <defs>
             <filter id="ribbonWobble">
               <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise" />
@@ -58,7 +64,7 @@ export const IntroPage: React.FC = () => {
               className="font-logo text-5xl tracking-[0.08em] text-white/85 select-none"
               style={{ letterSpacing: '0.08em' }}
             >
-              WhosIn
+              Whos<span className="text-white text-6xl">I</span>n
             </motion.span>
           </motion.div>
         )}
@@ -79,7 +85,7 @@ export const IntroPage: React.FC = () => {
               className="font-logo text-5xl tracking-[0.08em] text-white/85 select-none"
               style={{ letterSpacing: '0.08em' }}
             >
-              WhosIn
+              Whos<span className="text-white text-6xl">I</span>n
             </motion.span>
             <motion.div
               initial={{ width: 0 }}
