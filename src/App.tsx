@@ -4,9 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 
 import { BottomNav, AppHeader } from './components/layout/Navigation';
-import { LandingPage } from './features/landing/LandingPage';
-import { LoginPage } from './features/auth/LoginPage';
-import { SignupPage } from './features/auth/SignupPage';
 import { HomePage } from './features/home/HomePage';
 import { EventDetailPage } from './features/events/EventsPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
@@ -14,7 +11,6 @@ import { LeaderboardPage } from './features/leaderboard/LeaderboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { GroupsPage, GroupDetailPage } from './features/groups/GroupsPage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
-import { useAppStore } from './store/useAppStore';
 
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
@@ -35,16 +31,8 @@ const PageSkeleton = () => (
   </div>
 );
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = useAppStore(s => s.isLoggedIn);
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-};
-
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isLanding = location.pathname === '/' || location.pathname === '/landing';
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   return (
     <div className="min-h-screen" style={{ background: '#080808' }}>
@@ -57,25 +45,22 @@ const AppContent: React.FC = () => {
           style={{ background: 'radial-gradient(circle, rgba(170,235,0,0.04), transparent)' }} />
       </div>
 
-      {!isLanding && !isAuthPage && <AppHeader />}
+      <AppHeader />
 
-      <main className={isLanding || isAuthPage ? '' : 'safe-bottom'}>
+      <main className="safe-bottom">
         <Suspense fallback={<PageSkeleton />}>
           <AnimatePresence mode="wait" initial={false}>
             <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
-              <Route path="/landing" element={<Navigate to="/" replace />} />
-              <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
-              <Route path="/signup" element={<PageWrapper><SignupPage /></PageWrapper>} />
-              <Route path="/home" element={<PageWrapper><ProtectedRoute><HomePage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/events/:id" element={<PageWrapper><ProtectedRoute><EventDetailPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/calendar" element={<PageWrapper><ProtectedRoute><CalendarPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/leaderboard" element={<PageWrapper><ProtectedRoute><LeaderboardPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/profile" element={<PageWrapper><ProtectedRoute><ProfilePage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/groups" element={<PageWrapper><ProtectedRoute><GroupsPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/groups/:id" element={<PageWrapper><ProtectedRoute><GroupDetailPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/notifications" element={<PageWrapper><ProtectedRoute><NotificationsPage /></ProtectedRoute></PageWrapper>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/home" element={<PageWrapper><HomePage /></PageWrapper>} />
+              <Route path="/events/:id" element={<PageWrapper><EventDetailPage /></PageWrapper>} />
+              <Route path="/calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
+              <Route path="/leaderboard" element={<PageWrapper><LeaderboardPage /></PageWrapper>} />
+              <Route path="/profile" element={<PageWrapper><ProfilePage /></PageWrapper>} />
+              <Route path="/groups" element={<PageWrapper><GroupsPage /></PageWrapper>} />
+              <Route path="/groups/:id" element={<PageWrapper><GroupDetailPage /></PageWrapper>} />
+              <Route path="/notifications" element={<PageWrapper><NotificationsPage /></PageWrapper>} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </AnimatePresence>
         </Suspense>
