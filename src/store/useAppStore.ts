@@ -22,6 +22,13 @@ interface CreateEventInput {
   recurringPattern?: string;
 }
 
+interface CreateLiveEventInput {
+  groupId: string;
+  venue: string;
+  title?: string;
+  description?: string;
+}
+
 interface CreateGroupInput {
   name: string;
   description: string;
@@ -41,6 +48,7 @@ interface AppState {
 
   updateAttendance: (eventId: string, userId: string, status: AttendanceStatus) => void;
   createEvent: (input: CreateEventInput) => string;
+  createLiveEvent: (input: CreateLiveEventInput) => string;
   startEvent: (eventId: string) => void;
   updateMatchScore: (eventId: string, leagueId: string, matchId: string, score1: number, score2: number, winnerId: string) => void;
   completeEvent: (eventId: string) => void;
@@ -212,6 +220,58 @@ export const useAppStore = create<AppState>()(
         return newId;
       },
 
+      createLiveEvent: (input) => {
+        const newId = uid();
+        const currentUserId = get().currentUserId || '';
+        const now = new Date().toISOString();
+        const today = now.split('T')[0];
+        const nowTime = now.split('T')[1]?.slice(0, 5) || '19:00';
+        const endH = Math.min(parseInt(nowTime.split(':')[0]) + 3, 23);
+        const endTime = `${String(endH).padStart(2, '0')}:${nowTime.split(':')[1] || '00'}`;
+
+        const newEvent: Event = {
+          id: newId,
+          title: input.title || `Live Match @ ${input.venue}`,
+          sport: 'badminton' as any,
+          groupId: input.groupId,
+          date: today,
+          time: nowTime,
+          endTime,
+          venue: input.venue,
+          venueAddress: '',
+          description: input.description || '',
+          coverImage: '',
+          organizer: currentUserId,
+          maxSlots: 12,
+          weather: { condition: 'TBD', temp: 28, icon: '☀️', humidity: 60, wind: 10 },
+          attendance: [
+            { userId: currentUserId, status: 'coming', updatedAt: now },
+          ],
+          leagues: [],
+          status: 'live',
+          isRecurring: false,
+          announcements: [],
+          gallery: [],
+          tags: [],
+        };
+
+        set(state => ({
+          events: [...state.events, newEvent],
+        }));
+
+        const grp = get().groups.find(g => g.id === input.groupId);
+        get().addNotification({
+          type: 'event',
+          title: `🔥 Live: ${input.title}`,
+          body: `Happening now in ${grp?.name || 'your group'}!`,
+          read: false,
+          actionUrl: `/events/${newId}`,
+          avatar: '🔥',
+        });
+
+        return newId;
+      },
+
       startEvent: (eventId) => {
         set(state => ({
           events: state.events.map(e =>
@@ -271,8 +331,12 @@ export const useAppStore = create<AppState>()(
         const today = new Date().toISOString().split('T')[0];
         return get()
           .events
-          .filter(e => e.groupId === groupId && e.status === 'upcoming' && e.date >= today)
-          .sort((a, b) => a.date.localeCompare(b.date))[0];
+          .filter(e => e.groupId === groupId && (e.status === 'upcoming' || e.status === 'live') && e.date >= today)
+          .sort((a, b) => {
+            if (a.status === 'live' && b.status !== 'live') return -1;
+            if (b.status === 'live' && a.status !== 'live') return 1;
+            return a.date.localeCompare(b.date);
+          })[0];
       },
 
       getMyGroupsNextEvents: () => {
@@ -284,8 +348,12 @@ export const useAppStore = create<AppState>()(
         return myGroupIds
           .map(groupId => {
             const event = state.events
-              .filter(e => e.groupId === groupId && e.status === 'upcoming' && e.date >= today)
-              .sort((a, b) => a.date.localeCompare(b.date))[0];
+              .filter(e => e.groupId === groupId && (e.status === 'upcoming' || e.status === 'live') && e.date >= today)
+              .sort((a, b) => {
+                if (a.status === 'live' && b.status !== 'live') return -1;
+                if (b.status === 'live' && a.status !== 'live') return 1;
+                return a.date.localeCompare(b.date);
+              })[0];
             return event ? { groupId, event } : null;
           })
           .filter(Boolean) as { groupId: string; event: Event }[];

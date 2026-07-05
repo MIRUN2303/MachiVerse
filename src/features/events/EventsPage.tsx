@@ -28,6 +28,15 @@ export const EventDetailPage: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const event = events.find(e => e.id === id);
+  const groups = useAppStore(s => s.groups);
+  const group = event ? groups.find(g => g.id === event.groupId) : null;
+  const groupMember = group ? group.members.find(m => m.userId === currentUserId) : null;
+  const isEventAdmin = event && (
+    event.organizer === currentUserId ||
+    groupMember?.role === 'creator' ||
+    groupMember?.role === 'admin'
+  );
+  const isEditable = isEventAdmin && (event.status === 'upcoming' || event.status === 'live');
   if (!event) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
@@ -74,10 +83,15 @@ export const EventDetailPage: React.FC = () => {
           ←
         </button>
         <div className="absolute top-4 right-4 flex gap-2 z-10">
-          {event.status === 'completed'
-            ? <Badge variant="glass">✓ Completed</Badge>
+          {event.status === 'live'
+            ? <Badge variant="lime" dot>🔴 Live</Badge>
+            : event.status === 'completed'
+            ? <Badge variant="glass">✓ History</Badge>
             : <Badge variant="green" dot>Upcoming</Badge>
           }
+          {isEditable && (
+            <Badge variant="amber">✏️ Edit</Badge>
+          )}
         </div>
       </div>
 
@@ -197,6 +211,32 @@ export const EventDetailPage: React.FC = () => {
             ))}
           </div>
         </FadeUp>
+
+        {/* ADMIN CONTROLS */}
+        {isEditable && (
+          <FadeUp delay={0.14}>
+            <Card padding="md" className="space-y-2" variant="dark">
+              <p className="text-xs font-bold text-white/40 uppercase tracking-wider">🛠️ Admin</p>
+              <div className="flex gap-2">
+                {event.status === 'upcoming' && (
+                  <Button variant="lime" size="sm" className="flex-1"
+                    onClick={() => { useAppStore.getState().startEvent(event.id); }}>
+                    ▶️ Start Now
+                  </Button>
+                )}
+                {event.status === 'live' && (
+                  <Button variant="amber" size="sm" className="flex-1"
+                    onClick={() => { useAppStore.getState().completeEvent(event.id); }}>
+                    ✅ End & Save
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="flex-1">
+                  ✏️ Edit Details
+                </Button>
+              </div>
+            </Card>
+          </FadeUp>
+        )}
 
         {/* LEAGUES / SCORES */}
         {event.leagues.length > 0 && (
