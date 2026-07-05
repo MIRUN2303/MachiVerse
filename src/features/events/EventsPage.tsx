@@ -24,8 +24,16 @@ export const EventDetailPage: React.FC = () => {
   const updateAttendance = useAppStore(s => s.updateAttendance);
   const uploadEventImage = useAppStore(s => s.uploadEventImage);
   const currentUserId = useAppStore(s => s.currentUserId);
+  const createLeague = useAppStore(s => s.createLeague);
+  const addMatch = useAppStore(s => s.addMatch);
+  const updateMatchScore = useAppStore(s => s.updateMatchScore);
   const [galleryIdx, setGalleryIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [showLeagueSetup, setShowLeagueSetup] = useState(false);
+  const [leagueName, setLeagueName] = useState('');
+  const [leagueFormat, setLeagueFormat] = useState<'single' | 'doubles'>('doubles');
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [editingScore, setEditingScore] = useState<{ leagueId: string; matchId: string; s1: string; s2: string } | null>(null);
 
   const event = events.find(e => e.id === id);
   const groups = useAppStore(s => s.groups);
@@ -199,7 +207,7 @@ export const EventDetailPage: React.FC = () => {
         {/* ADMIN CONTROLS */}
         {isEditable && (
           <FadeUp delay={0.14}>
-            <Card padding="md" className="space-y-2" variant="dark">
+            <Card padding="md" className="space-y-3" variant="dark">
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider">🛠️ Admin</p>
               <div className="flex gap-2">
                 {event.status === 'upcoming' && (
@@ -218,15 +226,73 @@ export const EventDetailPage: React.FC = () => {
                   ✏️ Edit Details
                 </Button>
               </div>
+              <Button variant="glass" size="sm" className="w-full"
+                onClick={() => { setShowLeagueSetup(v => !v); if (!showLeagueSetup) { setLeagueName(`${sportCfg.label} League`); setSelectedPlayers(event.attendance.filter(a => a.status === 'coming').map(a => a.userId)); } }}>
+                🏟️ {showLeagueSetup ? 'Cancel Setup' : (event.leagues.length > 0 ? '+ Add League' : 'Setup League')}
+              </Button>
+
+              {showLeagueSetup && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 overflow-hidden">
+                  <input
+                    value={leagueName}
+                    onChange={e => setLeagueName(e.target.value)}
+                    placeholder="League name"
+                    className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-[#00ff41] transition-colors"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => setLeagueFormat('single')}
+                      className={`flex-1 text-xs font-bold py-2 rounded-xl border transition-all ${leagueFormat === 'single' ? 'border-[#00ff41] text-[#00ff41] bg-[#00ff41]/10' : 'border-white/10 text-white/50'}`}>
+                      🏸 Singles
+                    </button>
+                    <button onClick={() => setLeagueFormat('doubles')}
+                      className={`flex-1 text-xs font-bold py-2 rounded-xl border transition-all ${leagueFormat === 'doubles' ? 'border-[#00ff41] text-[#00ff41] bg-[#00ff41]/10' : 'border-white/10 text-white/50'}`}>
+                      🏸 Doubles
+                    </button>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/40 mb-2">Select players ({selectedPlayers.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                      {event.attendance.filter(a => a.status === 'coming').map(a => {
+                        const u = getUserById(a.userId);
+                        if (!u) return null;
+                        const sel = selectedPlayers.includes(a.userId);
+                        return (
+                          <button key={a.userId} onClick={() => { setSelectedPlayers(p => sel ? p.filter(x => x !== a.userId) : [...p, a.userId]); }}
+                            className={`flex items-center gap-1.5 text-xs font-medium py-1.5 px-3 rounded-xl border transition-all ${sel ? 'border-[#00ff41] bg-[#00ff41]/10 text-[#00ff41]' : 'border-white/10 text-white/60'}`}>
+                            <Avatar src={u.avatar} name={u.name} size="xs" /> {u.name.split(' ')[0]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <Button variant="lime" size="sm" className="w-full" disabled={!leagueName || selectedPlayers.length < 2 || (leagueFormat === 'doubles' && selectedPlayers.length < 4)}
+                    onClick={() => {
+                      const lid = createLeague({ eventId: event.id, name: leagueName, players: selectedPlayers, format: leagueFormat });
+                      if (lid) { setShowLeagueSetup(false); }
+                    }}>
+                    Create League ({selectedPlayers.length} players, {leagueFormat})
+                  </Button>
+                </motion.div>
+              )}
             </Card>
           </FadeUp>
         )}
 
         {/* LEAGUES / SCORES */}
-        {event.leagues.length > 0 && (
-          <FadeUp delay={0.15}>
-            <SectionHeader title="🏟️ Leagues & Scores" className="mb-3" />
-            {event.leagues.map(league => {
+        <FadeUp delay={0.15}>
+          <SectionHeader title="🏟️ Leagues & Scores" className="mb-3" />
+          {event.leagues.length === 0 ? (
+            <Card padding="md" variant="dark">
+              <p className="text-white/30 text-xs text-center">No leagues set up yet</p>
+              {isEditable && (
+                <Button variant="ghost" size="sm" className="w-full mt-2"
+                  onClick={() => { setShowLeagueSetup(true); setLeagueName(`${sportCfg.label} League`); setSelectedPlayers(event.attendance.filter(a => a.status === 'coming').map(a => a.userId)); }}>
+                  + Create League
+                </Button>
+              )}
+            </Card>
+          ) : (
+            event.leagues.map(league => {
               const participantCount = new Set(league.players).size;
               const team1 = league.teams[0];
               const team2 = league.teams[1];
@@ -248,6 +314,8 @@ export const EventDetailPage: React.FC = () => {
                     return bestTeam ? getPlayerNames(bestTeam.playerIds) : null;
                   })()
                 : null;
+
+              const canScore = event.status === 'live' && isEventAdmin;
 
               return (
                 <Card key={league.id} padding="md" className="mb-3">
@@ -281,24 +349,82 @@ export const EventDetailPage: React.FC = () => {
                       const p2 = t2 ? getPlayerNames(t2.playerIds) : '?';
                       const isWin1 = match.winnerId === t1?.id;
                       const isWin2 = match.winnerId === t2?.id;
+                      const isEditing = editingScore?.matchId === match.id;
                       return (
                         <div key={match.id} className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                          <div className="flex items-center gap-2">
-                            <span className={`flex-1 text-sm font-bold text-right ${isWin1 ? 'text-green-400' : 'text-white/70'}`}>{p1}</span>
-                            <span className="font-display font-black text-white text-xl px-2">{match.score1}—{match.score2}</span>
-                            <span className={`flex-1 text-sm font-bold ${isWin2 ? 'text-green-400' : 'text-white/70'}`}>{p2}</span>
-                          </div>
-                          {isWin1 && <p className="text-center text-green-400/60 text-xs mt-1">🏆 {p1} win</p>}
-                          {isWin2 && <p className="text-center text-green-400/60 text-xs mt-1">🏆 {p2} win</p>}
+                          {isEditing ? (
+                            <div className="flex items-center justify-center gap-3 py-1">
+                              <span className="text-sm font-bold text-white/70">{p1}</span>
+                              <div className="flex items-center gap-2">
+                                <input type="number" min="0" value={editingScore!.s1} onChange={e => setEditingScore(s => s ? { ...s, s1: e.target.value } : null)}
+                                  className="w-14 text-center bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white font-bold text-lg outline-none focus:border-[#00ff41]" />
+                                <span className="text-white/40 font-bold">—</span>
+                                <input type="number" min="0" value={editingScore!.s2} onChange={e => setEditingScore(s => s ? { ...s, s2: e.target.value } : null)}
+                                  className="w-14 text-center bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white font-bold text-lg outline-none focus:border-[#00ff41]" />
+                              </div>
+                              <span className="text-sm font-bold text-white/70">{p2}</span>
+                              <button
+                                onClick={() => {
+                                  const s1v = parseInt(editingScore!.s1);
+                                  const s2v = parseInt(editingScore!.s2);
+                                  if (isNaN(s1v) || isNaN(s2v)) return;
+                                  const wid = s1v > s2v ? t1?.id : (s2v > s1v ? t2?.id : null);
+                                  updateMatchScore(event.id, league.id, match.id, s1v, s2v, wid || '');
+                                  setEditingScore(null);
+                                }}
+                                className="text-xs font-bold text-[#00ff41] hover:underline">Save</button>
+                              <button onClick={() => setEditingScore(null)}
+                                className="text-xs text-white/40 hover:underline">Cancel</button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className={`flex-1 text-sm font-bold text-right ${isWin1 ? 'text-green-400' : 'text-white/70'}`}>{p1}</span>
+                                <button onClick={() => canScore ? setEditingScore({ leagueId: league.id, matchId: match.id, s1: String(match.score1), s2: String(match.score2) }) : undefined}
+                                  className={`font-display font-black text-xl px-2 ${canScore ? 'cursor-pointer hover:text-[#00ff41] transition-colors' : ''} ${match.winnerId ? 'text-white' : 'text-white/50'}`}>
+                                  {match.score1}—{match.score2}
+                                </button>
+                                <span className={`flex-1 text-sm font-bold ${isWin2 ? 'text-green-400' : 'text-white/70'}`}>{p2}</span>
+                              </div>
+                              {isWin1 && <p className="text-center text-green-400/60 text-xs mt-1">🏆 {p1} win</p>}
+                              {isWin2 && <p className="text-center text-green-400/60 text-xs mt-1">🏆 {p2} win</p>}
+                            </>
+                          )}
                         </div>
                       );
                     })}
                   </div>
+
+                  {/* Add match (for live events) */}
+                  {canScore && league.teams.length >= 2 && (
+                    <div className="mt-2">
+                      {(() => {
+                        const played = new Set<string>();
+                        for (const m of league.matches) {
+                          played.add([m.team1Id, m.team2Id].sort().join('|'));
+                        }
+                        const missing: { t1: any; t2: any }[] = [];
+                        for (let i = 0; i < league.teams.length; i++) {
+                          for (let j = i + 1; j < league.teams.length; j++) {
+                            const key = [league.teams[i].id, league.teams[j].id].sort().join('|');
+                            if (!played.has(key)) missing.push({ t1: league.teams[i], t2: league.teams[j] });
+                          }
+                        }
+                        if (missing.length === 0) return null;
+                        return (
+                          <Button variant="ghost" size="sm" className="w-full mt-1"
+                            onClick={() => addMatch({ leagueId: league.id, team1Id: missing[0].t1.id, team2Id: missing[0].t2.id })}>
+                            + Add Match ({getPlayerNames(missing[0].t1.playerIds)} vs {getPlayerNames(missing[0].t2.playerIds)})
+                          </Button>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </Card>
               );
-            })}
-          </FadeUp>
-        )}
+            })
+          )}
+        </FadeUp>
 
         {/* GALLERY */}
         <FadeUp delay={0.2}>
