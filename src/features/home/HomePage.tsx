@@ -96,38 +96,49 @@ const GroupEventCard: React.FC<{
             <div className="flex-1">
               <h2 className="font-display font-black text-xl text-white leading-tight">{event.title}</h2>
               <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                📍 {event.venue} · {format(parseISO(event.date), 'EEE, MMM d')} · {event.time}
+                📍 {event.venue} · {event.status === 'live' ? '🔴 Now' : `${format(parseISO(event.date), 'EEE, MMM d')} · ${event.time}`}
               </p>
             </div>
           </div>
 
-          {/* Countdown */}
-          <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.3)' }}>⏳ STARTS IN</p>
-            <div className="flex gap-3">
-              {[
-                { val: countdown.days,    label: 'Days' },
-                { val: countdown.hours,   label: 'Hrs' },
-                { val: countdown.minutes, label: 'Min' },
-                { val: countdown.seconds, label: 'Sec' },
-              ].map(({ val, label }) => (
-                <div key={label} className="flex-1 text-center">
-                  <AnimatePresence mode="wait">
-                    <motion.p key={val}
-                      initial={{ y: -6, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: 6, opacity: 0 }}
-                      transition={{ duration: 0.12 }}
-                      className="font-display font-black text-3xl text-white leading-none"
-                      style={{ textShadow: '0 0 20px rgba(249,115,22,0.5)' }}>
-                      {String(val).padStart(2, '0')}
-                    </motion.p>
-                  </AnimatePresence>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{label}</p>
-                </div>
-              ))}
+          {/* Countdown / Live indicator */}
+          {event.status === 'live' ? (
+            <div className="rounded-2xl p-3.5 flex items-center justify-center gap-3"
+              style={{ background: 'rgba(0,255,65,0.08)', border: '1px solid rgba(0,255,65,0.2)' }}>
+              <span className="w-3 h-3 rounded-full" style={{ background: '#00ff41', boxShadow: '0 0 12px #00ff41', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div className="text-center">
+                <p className="font-display font-black text-lg text-[#00ff41]">Live Now</p>
+                <p className="text-xs" style={{ color: 'rgba(0,255,65,0.5)' }}>Happening right now · {event.venue}</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-[10px] font-bold tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.3)' }}>⏳ STARTS IN</p>
+              <div className="flex gap-3">
+                {[
+                  { val: countdown.days,    label: 'Days' },
+                  { val: countdown.hours,   label: 'Hrs' },
+                  { val: countdown.minutes, label: 'Min' },
+                  { val: countdown.seconds, label: 'Sec' },
+                ].map(({ val, label }) => (
+                  <div key={label} className="flex-1 text-center">
+                    <AnimatePresence mode="wait">
+                      <motion.p key={val}
+                        initial={{ y: -6, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 6, opacity: 0 }}
+                        transition={{ duration: 0.12 }}
+                        className="font-display font-black text-3xl text-white leading-none"
+                        style={{ textShadow: '0 0 20px rgba(249,115,22,0.5)' }}>
+                        {String(val).padStart(2, '0')}
+                      </motion.p>
+                    </AnimatePresence>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Attendance status */}
           <div onClick={e => e.stopPropagation()} className="flex items-center justify-between">
@@ -176,7 +187,7 @@ const GroupEventCard: React.FC<{
         </div>
         <p className="font-bold text-white text-sm truncate">{event.title}</p>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-          {format(parseISO(event.date), 'EEE, MMM d')} · {event.time} · {event.venue}
+          {event.status === 'live' ? '🔴 Today · Now' : `${format(parseISO(event.date), 'EEE, MMM d')} · ${event.time}`} · {event.venue}
         </p>
       </div>
 
@@ -186,12 +197,19 @@ const GroupEventCard: React.FC<{
         ) : (
           <span className="text-[10px] text-white/30">—</span>
         )}
-        <div>
-          <p className="font-display font-bold text-lg text-white leading-none">
-            {String(countdown.days).padStart(2, '0')}
-          </p>
-          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>days</p>
-        </div>
+        {event.status === 'live' ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl" style={{ background: 'rgba(0,255,65,0.1)', border: '1px solid rgba(0,255,65,0.2)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: '#00ff41', boxShadow: '0 0 6px #00ff41' }} />
+            <span className="text-xs font-bold text-[#00ff41]">LIVE</span>
+          </div>
+        ) : (
+          <div>
+            <p className="font-display font-bold text-lg text-white leading-none">
+              {String(countdown.days).padStart(2, '0')}
+            </p>
+            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>days</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -327,7 +345,7 @@ export const HomePage: React.FC = () => {
                   <p className="font-bold text-white text-sm truncate">{group.name}</p>
                   <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     {nextEvent
-                      ? `📅 ${format(parseISO(nextEvent.event.date), 'MMM d')}`
+                      ? (nextEvent.event.status === 'live' ? '🔴 Live Now' : `📅 ${format(parseISO(nextEvent.event.date), 'MMM d')}`)
                       : `${group.memberCount} members`}
                   </p>
                 </div>

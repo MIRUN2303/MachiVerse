@@ -10,14 +10,15 @@ const gid = () => `g_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 interface CreateLeagueInput {
   eventId: string;
   name: string;
-  players: string[];
   format: 'single' | 'doubles';
 }
 
 interface CreateMatchInput {
   leagueId: string;
-  team1Id: string;
-  team2Id: string;
+  side1PlayerIds: string[];
+  side2PlayerIds: string[];
+  score1: number;
+  score2: number;
 }
 
 interface CreateEventInput {
@@ -299,67 +300,28 @@ export const useAppStore = create<AppState>()(
 
       createLeague: (input) => {
         const lid = `l_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-        const event = get().events.find(e => e.id === input.eventId);
-        if (!event) return '';
-
-        const players = input.players;
-        const shuffled = [...players].sort(() => Math.random() - 0.5);
-        const teamSize = input.format === 'doubles' ? 2 : 1;
-        const teams: any[] = [];
-        const teamColors = ['#00ff41', '#7c3aed', '#f59e0b', '#ef4444', '#06b6d4', '#f97316'];
-        for (let i = 0; i < shuffled.length; i += teamSize) {
-          const slice = shuffled.slice(i, i + teamSize);
-          if (slice.length < teamSize && teamSize > 1 && teams.length > 0) {
-            teams[teams.length - 1].playerIds.push(...slice);
-            continue;
-          }
-          teams.push({
-            id: `t_${lid}_${i}`,
-            leagueId: lid,
-            name: `Team ${String.fromCharCode(65 + teams.length)}`,
-            playerIds: slice,
-            color: teamColors[teams.length % teamColors.length],
-          });
-        }
-
-        const matches: any[] = [];
-        for (let i = 0; i < teams.length; i++) {
-          for (let j = i + 1; j < teams.length; j++) {
-            matches.push({
-              id: `m_${lid}_${i}_${j}`,
-              leagueId: lid,
-              team1Id: teams[i].id,
-              team2Id: teams[j].id,
-              score1: 0,
-              score2: 0,
-              winnerId: null,
-              duration: 0,
-              notes: '',
-              completedAt: null,
-            });
-          }
-        }
-
         const league = {
           id: lid,
           name: input.name,
-          players,
-          teams,
-          matches,
+          players: [],
+          teams: [],
+          matches: [],
           status: 'pending' as const,
         };
-
         set(state => ({
           events: state.events.map(e =>
             e.id === input.eventId ? { ...e, leagues: [...e.leagues, league] } : e
           ),
         }));
-
         return lid;
       },
 
       addMatch: (input) => {
         const newMid = `m_${Date.now()}`;
+        const team1Id = `t_${newMid}_1`;
+        const team2Id = `t_${newMid}_2`;
+        const winnerId = input.score1 > input.score2 ? team1Id : (input.score2 > input.score1 ? team2Id : null);
+        const teamColors = ['#00ff41', '#7c3aed'];
         set(state => ({
           events: state.events.map(e => ({
             ...e,
@@ -367,15 +329,22 @@ export const useAppStore = create<AppState>()(
               l.id === input.leagueId
                 ? {
                     ...l,
+                    teams: [
+                      ...l.teams.filter(t => t.id !== team1Id && t.id !== team2Id),
+                      { id: team1Id, leagueId: input.leagueId, name: 'Side 1', playerIds: input.side1PlayerIds, color: teamColors[0] },
+                      { id: team2Id, leagueId: input.leagueId, name: 'Side 2', playerIds: input.side2PlayerIds, color: teamColors[1] },
+                    ],
                     matches: [...l.matches, {
                       id: newMid,
                       leagueId: input.leagueId,
-                      team1Id: input.team1Id,
-                      team2Id: input.team2Id,
-                      score1: 0, score2: 0,
-                      winnerId: null,
-                      duration: 0, notes: '',
-                      completedAt: null,
+                      team1Id,
+                      team2Id,
+                      score1: input.score1,
+                      score2: input.score2,
+                      winnerId,
+                      duration: 0,
+                      notes: '',
+                      completedAt: winnerId ? new Date().toISOString() : null,
                     }],
                   }
                 : l
@@ -397,7 +366,7 @@ export const useAppStore = create<AppState>()(
                           ...l,
                           matches: l.matches.map(m =>
                             m.id === matchId
-                              ? { ...m, score1, score2, winnerId }
+                              ? { ...m, score1, score2, winnerId, completedAt: winnerId ? new Date().toISOString() : null }
                               : m
                           ),
                         }
