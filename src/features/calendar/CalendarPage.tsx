@@ -19,6 +19,7 @@ type View = typeof VIEWS[number];
 export const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const events = useAppStore(s => s.events);
+  const currentUserId = useAppStore(s => s.currentUserId);
   const [view, setView] = useState<View>('Month');
   const [current, setCurrent] = useState(new Date());
   const [selected, setSelected] = useState<Date | null>(null);
@@ -125,6 +126,7 @@ export const CalendarPage: React.FC = () => {
                   selectedEvents.map(event => {
                     const cfg = SPORT_CONFIG[event.sport];
                     const confirmed = event.attendance.filter(a => a.status === 'coming').length;
+                    const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
                     return (
                       <Card key={event.id} interactive padding="md" onClick={() => navigate(`/events/${event.id}`)}>
                         <div className="flex items-center gap-3">
@@ -133,9 +135,12 @@ export const CalendarPage: React.FC = () => {
                             <p className="font-bold text-white text-sm">{event.title}</p>
                             <p className="text-white/50 text-xs">{event.time} · {confirmed} going</p>
                           </div>
-                          <Badge variant={event.status === 'upcoming' ? 'blue' : 'glass'} size="sm">
-                            {event.status}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            {myStatus && <span className="text-xs">{myStatus === 'coming' ? '✅' : myStatus === 'maybe' ? '🤔' : myStatus === 'late' ? '⏰' : '❌'}</span>}
+                            <Badge variant={event.status === 'upcoming' ? 'blue' : 'glass'} size="sm">
+                              {event.status}
+                            </Badge>
+                          </div>
                         </div>
                       </Card>
                     );
@@ -196,6 +201,7 @@ export const CalendarPage: React.FC = () => {
         <div className="space-y-2">
           {days.flatMap(day => getEventsForDate(day).map(e => ({ ...e, _day: day }))).map(event => {
             const cfg = SPORT_CONFIG[event.sport];
+            const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
             return (
               <Card key={event.id} interactive padding="sm" onClick={() => navigate(`/events/${event.id}`)}>
                 <div className="flex items-center gap-3">
@@ -204,6 +210,9 @@ export const CalendarPage: React.FC = () => {
                     <p className="font-bold text-white text-sm">{event.title}</p>
                     <p className="text-white/50 text-xs">{format(event._day, 'EEE, MMM d')} · {event.time}</p>
                   </div>
+                  {myStatus && (
+                    <span className="text-xs">{myStatus === 'coming' ? '✅' : myStatus === 'maybe' ? '🤔' : myStatus === 'late' ? '⏰' : '❌'}</span>
+                  )}
                 </div>
               </Card>
             );
@@ -233,6 +242,7 @@ export const CalendarPage: React.FC = () => {
             {upcoming.map(event => {
               const cfg = SPORT_CONFIG[event.sport];
               const confirmed = event.attendance.filter(a => a.status === 'coming').length;
+              const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
               return (
                 <Card key={event.id} interactive padding="none" onClick={() => navigate(`/events/${event.id}`)}>
                   <div className="flex">
@@ -253,6 +263,9 @@ export const CalendarPage: React.FC = () => {
                         <p className="font-bold text-white text-sm">{event.title}</p>
                         <p className="text-white/50 text-xs">{event.time} · {confirmed} going · {event.venue}</p>
                       </div>
+                      {myStatus && (
+                        <span className="text-xs">{myStatus === 'coming' ? '✅' : myStatus === 'maybe' ? '🤔' : myStatus === 'late' ? '⏰' : '❌'}</span>
+                      )}
                     </div>
                   </div>
                 </Card>

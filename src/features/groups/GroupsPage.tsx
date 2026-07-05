@@ -299,6 +299,7 @@ export const GroupDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('Members');
   const [showCreate, setShowCreate] = useState(false);
+  const currentUserId = useAppStore(s => s.currentUserId);
 
   const group = GROUPS.find(g => g.id === id);
   if (!group) return <div className="min-h-screen flex items-center justify-center"><p className="text-white/50">Group not found</p></div>;
@@ -428,7 +429,9 @@ export const GroupDetailPage: React.FC = () => {
                 </p>
                 {upcomingEvents.length > 0 ? (
                   <div className="space-y-2">
-                    {upcomingEvents.map(event => (
+                    {upcomingEvents.map(event => {
+                      const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
+                      return (
                       <Card key={event.id} interactive padding="md" onClick={() => navigate(`/events/${event.id}`)}>
                         <div className="flex gap-3 items-start">
                           <span className="text-2xl">{SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]?.emoji || '📅'}</span>
@@ -436,10 +439,15 @@ export const GroupDetailPage: React.FC = () => {
                             <p className="font-bold text-white text-sm truncate">{event.title}</p>
                             <p className="text-white/50 text-xs">{event.date} · {event.time} · {event.venue}</p>
                           </div>
-                          <Badge variant="blue" size="sm">Soon</Badge>
+                          <div className="flex items-center gap-1.5">
+                            {myStatus && (
+                              <span className="text-xs">{myStatus === 'coming' ? '✅' : myStatus === 'maybe' ? '🤔' : myStatus === 'late' ? '⏰' : '❌'}</span>
+                            )}
+                            <Badge variant="blue" size="sm">Soon</Badge>
+                          </div>
                         </div>
                       </Card>
-                    ))}
+                    );})}
                   </div>
                 ) : (
                   <div className="glass rounded-2xl p-6 text-center">

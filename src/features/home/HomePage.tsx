@@ -81,6 +81,7 @@ const GroupEventCard: React.FC<{
   const countdown = useCountdown(event.date, event.time);
   const cfg = SPORT_CONFIG[event.sport];
   const group = getGroupById(groupId);
+  const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
 
   if (isHero) {
     return (
@@ -203,11 +204,18 @@ const GroupEventCard: React.FC<{
         </p>
       </div>
 
-      <div className="text-right flex-shrink-0">
-        <p className="font-display font-bold text-lg text-white leading-none">
-          {String(countdown.days).padStart(2, '0')}
-        </p>
-        <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>days</p>
+      <div className="text-right flex-shrink-0 flex items-center gap-2">
+        {myStatus ? (
+          <span className="text-xs">{myStatus === 'coming' ? '✅' : myStatus === 'maybe' ? '🤔' : myStatus === 'late' ? '⏰' : '❌'}</span>
+        ) : (
+          <span className="text-[10px] text-white/30">—</span>
+        )}
+        <div>
+          <p className="font-display font-bold text-lg text-white leading-none">
+            {String(countdown.days).padStart(2, '0')}
+          </p>
+          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>days</p>
+        </div>
       </div>
     </motion.div>
   );
