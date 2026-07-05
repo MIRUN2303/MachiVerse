@@ -31,7 +31,7 @@ export const EventDetailPage: React.FC = () => {
       <div className="text-center">
         <p className="text-5xl mb-4">🔍</p>
         <p className="text-white/60">Event not found</p>
-        <Button onClick={() => navigate('/events')} className="mt-4">Go back</Button>
+        <Button onClick={() => navigate('/home')} className="mt-4">Go home</Button>
       </div>
     </div>
   );

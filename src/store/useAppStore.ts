@@ -375,12 +375,16 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'machiverse-store',
+      version: 1,
+      migrate: (persisted: any) => ({
+        ...persisted,
+        isLoggedIn: true,
+        currentUserId: 'u1',
+      }),
       partialize: (state) => ({
         events: state.events,
         notifications: state.notifications,
         activeTab: state.activeTab,
-        isLoggedIn: state.isLoggedIn,
-        currentUserId: state.currentUserId,
         groups: state.groups,
       }),
     }

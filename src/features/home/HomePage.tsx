@@ -222,7 +222,8 @@ export const HomePage: React.FC = () => {
   const getMyGroupsNextEvents = useAppStore(s => s.getMyGroupsNextEvents);
   const [showCreate, setShowCreate] = useState(false);
 
-  const currentUser = USERS.find(u => u.id === currentUserId)!;
+  const currentUser = USERS.find(u => u.id === currentUserId);
+  if (!currentUser) return <div className="min-h-screen flex items-center justify-center"><p className="text-white/50">Loading...</p></div>;
   const myGroupEvents = getMyGroupsNextEvents();
   const [heroEntry, ...moreEntries] = myGroupEvents;
   const recentWinners = LEADERBOARD.slice(0, 3);
