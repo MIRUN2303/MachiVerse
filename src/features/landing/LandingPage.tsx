@@ -15,7 +15,7 @@ const FEATURES = [
 const SPORTS_ROW = ['badminton', 'cricket', 'football', 'cycling', 'trekking', 'cafe', 'running', 'basketball'] as const;
 
 const TESTIMONIALS = [
-  { name: 'Sanjay M.', sport: '🏸 Badminton Club', quote: 'We deleted the WhatsApp attendance poll group. Machiverse does it better in every single way.' },
+  { name: 'Sanjay M.', sport: '🏸 Badminton Club', quote: 'We deleted the WhatsApp attendance poll group. WhosIn does it better in every single way.' },
   { name: 'Divya K.', sport: '🥾 Trek Crew', quote: 'The leaderboard creates so much healthy rivalry. We actually show up more just to climb the ranks!' },
   { name: 'Rohan P.', sport: '⚽ Sunday FC', quote: 'From 3 WhatsApp groups to one beautiful app. Our football league has never been this organized.' },
 ];
@@ -54,7 +54,7 @@ export const LandingPage: React.FC = () => {
         style={{ background: 'rgba(8,8,8,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full pulse-lime" style={{ background: '#aaeb00' }} />
-          <span className="font-display font-black text-xl gradient-text">Machiverse</span>
+          <span className="font-logo text-xl tracking-wider text-white">Whos<span className="text-[#00ff41] text-2xl">I</span>n</span>
         </div>
         <div className="hidden md:flex items-center gap-6">
           {['Features', 'Sports', 'Community'].map(item => (
@@ -252,7 +252,7 @@ export const LandingPage: React.FC = () => {
           <h2 className="font-display font-black text-3xl md:text-5xl text-white mb-3" style={{ letterSpacing: '-0.02em' }}>
             Every activity <span className="gradient-text">covered</span>
           </h2>
-          <p className="text-white/35 max-w-lg mx-auto">From badminton courts to mountain trails. Machiverse adapts to your crew.</p>
+          <p className="text-white/35 max-w-lg mx-auto">From badminton courts to mountain trails. WhosIn adapts to your crew.</p>
         </motion.div>
         <div className="flex gap-3 px-6 overflow-x-auto scrollbar-hidden pb-2">
           {SPORTS_ROW.map((sport, i) => {
@@ -370,8 +370,8 @@ export const LandingPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="py-8 px-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <p className="font-display font-black text-xl gradient-text mb-1">Machiverse</p>
-        <p className="text-white/20 text-sm">Your Weekend Universe · Made for weekend warriors</p>
+        <p className="font-logo text-2xl tracking-wider text-white mb-1">Whos<span className="text-[#00ff41] text-3xl">I</span>n</p>
+        <p className="text-white/20 text-sm">Who's in? · Play. Compete. Conquer.</p>
       </footer>
     </div>
   );

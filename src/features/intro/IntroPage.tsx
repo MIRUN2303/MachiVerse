@@ -91,10 +91,10 @@ export const IntroPage: React.FC = () => {
             <motion.span
               animate={{ textShadow: ['0 0 20px rgba(0,255,65,0.3)', '0 0 50px rgba(0,255,65,0.6)', '0 0 20px rgba(0,255,65,0.3)'] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="font-logo text-6xl gradient-text tracking-wider"
+              className="font-logo text-6xl tracking-wider text-white"
               style={{ letterSpacing: '0.04em' }}
             >
-              MachiVerse
+              Whos<span className="text-[#00ff41] text-7xl">I</span>n
             </motion.span>
           </motion.div>
         )}
@@ -112,10 +112,10 @@ export const IntroPage: React.FC = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, duration: 0.5 }}
-              className="font-logo text-6xl gradient-text tracking-wider"
+              className="font-logo text-6xl tracking-wider text-white"
               style={{ letterSpacing: '0.04em' }}
             >
-              MachiVerse
+              Whos<span className="text-[#00ff41] text-7xl">I</span>n
             </motion.span>
             <motion.div
               initial={{ width: 0 }}

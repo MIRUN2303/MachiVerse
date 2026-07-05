@@ -101,7 +101,7 @@ export const AppHeader: React.FC<{
       <div>
         {title
           ? <h1 className="font-display font-bold text-white text-lg">{title}</h1>
-          : <span className="font-logo text-2xl gradient-text tracking-wider">MachiVerse</span>
+          : <span className="font-logo text-2xl tracking-wider text-white">Whos<span className="text-[#00ff41] text-3xl">I</span>n</span>
         }
         {subtitle && <p className="text-white/40 text-xs">{subtitle}</p>}
       </div>

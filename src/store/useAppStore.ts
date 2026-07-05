@@ -574,7 +574,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'machiverse-store',
+      name: 'whosin-store',
       version: 1,
       migrate: (persisted: any) => ({
         ...persisted,

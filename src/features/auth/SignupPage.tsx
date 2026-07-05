@@ -29,7 +29,7 @@ export const SignupPage: React.FC = () => {
     }
     const ok = signup(name, email, phone, password);
     if (ok) {
-      toast.success('Account created! Welcome to Machiverse!');
+      toast.success('Account created! Welcome to WhosIn!');
       navigate('/home');
     } else {
       toast.error('Email already registered');
@@ -50,8 +50,8 @@ export const SignupPage: React.FC = () => {
             whileHover={{ x: -2 }}
           >← Back</motion.button>
           <span className="text-4xl">🏸</span>
-          <h1 className="font-display font-black text-3xl gradient-text mt-2">Join Machiverse</h1>
-          <p className="text-white/40 text-sm mt-1">Start your weekend journey</p>
+          <h1 className="font-logo text-3xl tracking-wider text-white mt-2">Whos<span className="text-[#00ff41] text-4xl">I</span>n</h1>
+          <p className="text-white/40 text-sm mt-1">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

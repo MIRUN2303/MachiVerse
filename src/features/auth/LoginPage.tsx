@@ -34,8 +34,8 @@ export const LoginPage: React.FC = () => {
       >
         <div className="text-center mb-8">
           <span className="text-4xl">🏸</span>
-          <h1 className="font-display font-black text-3xl gradient-text mt-2">Machiverse</h1>
-          <p className="text-white/40 text-sm mt-1">Sign in to your weekend universe</p>
+          <h1 className="font-logo text-3xl tracking-wider text-white mt-2">Whos<span className="text-[#00ff41] text-4xl">I</span>n</h1>
+          <p className="text-white/40 text-sm mt-1">Who's in? Sign in to find out.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
