@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GROUPS, SPORT_CONFIG, getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
+import { GROUPS, SPORT_CONFIG, getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
 import { Card, Avatar, Badge, Button, SectionHeader } from '../../components/ui';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
 import { clsx } from 'clsx';
 import { useAppStore } from '../../store/useAppStore';
-import type { SportType } from '../../data/types';
 import toast from 'react-hot-toast';
 
 const ROLE_CONFIG = {
@@ -15,6 +14,25 @@ const ROLE_CONFIG = {
   member: { label: 'Member', color: '#6b7280', emoji: '⚡' },
 };
 
+const LOGO_OPTIONS = ['🏸', '🏏', '⚽', '🎾', '🏐', '🏀', '🏃', '🚴', '🥾', '🏊', '🎬', '☕', '🚗', '🎮', '🎲', '✨', '🎯'];
+
+// =============================================
+// SPORT BADGE
+// =============================================
+const SportBadge: React.FC<{ sport: string; size?: 'sm' | 'xs' }> = ({ sport, size = 'xs' }) => {
+  const cfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
+  if (!cfg) return null;
+  return (
+    <span className={clsx('inline-flex items-center gap-1 rounded-full font-semibold', size === 'xs' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-0.5')}
+      style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`, color: cfg.color }}>
+      {cfg.emoji} {cfg.label}
+    </span>
+  );
+};
+
+// =============================================
+// MEMBER DROPDOWN
+// =============================================
 const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId, groupId }) => {
   const user = getUserById(userId);
   const [open, setOpen] = useState(false);
@@ -63,7 +81,30 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
                 <StatItem label="Losses" value={computed.losses} color="#ef4444" />
                 <StatItem label="Win Rate" value={`${computed.winRate}%`} color={computed.winRate >= 60 ? '#10b981' : computed.winRate >= 40 ? '#f59e0b' : '#ef4444'} />
               </div>
-              <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">🏆 Overall (All Groups)</p>
+
+              {/* Per-sport breakdown */}
+              {computed.sportBreakdown.length > 0 && (
+                <>
+                  <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">🏅 Per Sport</p>
+                  <div className="space-y-1.5">
+                    {computed.sportBreakdown.map(s => {
+                      const cfg = SPORT_CONFIG[s.sport as keyof typeof SPORT_CONFIG];
+                      return (
+                        <div key={s.sport} className="flex items-center gap-2 rounded-xl p-2" style={{ background: `${cfg?.color || '#7c3aed'}08` }}>
+                          <span className="text-sm">{cfg?.emoji || '🎯'}</span>
+                          <span className="text-xs font-semibold text-white/60 flex-1">{cfg?.label || s.sport}</span>
+                          <span className="text-xs text-white/40">{s.matchesPlayed}m</span>
+                          <span className={clsx('text-xs font-bold', s.winRate >= 60 ? 'text-green-400' : s.winRate >= 40 ? 'text-amber-400' : 'text-red-400')}>
+                            {s.winRate}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 mt-3">🏆 Overall (All Groups)</p>
               <div className="grid grid-cols-2 gap-2">
                 <StatItem label="Total Matches" value={overall.totalMatches} color="#7c3aed" />
                 <StatItem label="Total Wins" value={overall.totalWins} color="#10b981" />
@@ -86,12 +127,96 @@ const StatItem: React.FC<{ label: string; value: string | number; color: string 
 );
 
 // =============================================
+// CALENDAR VIEW
+// =============================================
+const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
+  const events = getGroupEvents(groupId);
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth());
+  const [year, setYear] = useState(now.getFullYear());
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const monthLabel = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const eventMap: Record<string, typeof events> = {};
+  for (const e of events) {
+    const d = e.date;
+    if (!eventMap[d]) eventMap[d] = [];
+    eventMap[d].push(e);
+  }
+
+  const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+
+  const cells: { day: number; events: typeof events }[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push({ day: 0, events: [] });
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({ day: d, events: eventMap[key] || [] });
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prev} className="text-white/40 text-sm">←</button>
+        <p className="font-bold text-white text-sm">{monthLabel}</p>
+        <button onClick={next} className="text-white/40 text-sm">→</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+          <div key={d} className="text-center text-[10px] font-bold text-white/30 py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((cell, i) => {
+          const isToday = cell.day === now.getDate() && month === now.getMonth() && year === now.getFullYear();
+          return (
+            <div key={i} className={clsx('text-center text-xs py-2 rounded-xl', cell.day === 0 ? 'invisible' : '')}
+              style={{ background: isToday ? 'rgba(170,235,0,0.15)' : 'transparent' }}>
+              <span className={clsx('font-semibold', isToday ? 'text-[#aaeb00]' : 'text-white/70')}>{cell.day}</span>
+              {cell.events.length > 0 && (
+                <div className="flex justify-center gap-0.5 mt-0.5">
+                  {cell.events.slice(0, 3).map(e => {
+                    const cfg = SPORT_CONFIG[e.sport as keyof typeof SPORT_CONFIG];
+                    return <span key={e.id} className="w-1 h-1 rounded-full" style={{ background: cfg?.color || '#7c3aed' }} />;
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* Events list for this month */}
+      <div className="mt-4 space-y-1.5">
+        {events.filter(e => e.date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)).map(e => {
+          const cfg = SPORT_CONFIG[e.sport as keyof typeof SPORT_CONFIG];
+          return (
+            <div key={e.id} className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <span className="text-sm">{cfg?.emoji || '📅'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-white truncate">{e.title}</p>
+                <p className="text-[10px] text-white/40">{e.date} · {e.time}</p>
+              </div>
+              <Badge variant={e.status === 'upcoming' ? 'blue' : 'glass'} size="sm">{e.status === 'upcoming' ? 'Soon' : '✓'}</Badge>
+            </div>
+          );
+        })}
+        {events.filter(e => e.date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)).length === 0 && (
+          <p className="text-center text-white/30 text-xs py-4">No events this month</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =============================================
 // CREATE GROUP MODAL
 // =============================================
 const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const createGroup = useAppStore(s => s.createGroup);
   const [name, setName] = useState('');
-  const [sport, setSport] = useState<SportType>('badminton');
+  const [logo, setLogo] = useState('🎯');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [rules, setRules] = useState('');
@@ -101,7 +226,6 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
     const rulesArr = rules.split('\n').filter(r => r.trim());
     const id = createGroup({
       name: name.trim(),
-      sport,
       description: description.trim(),
       isPrivate,
       rules: rulesArr.length > 0 ? rulesArr : ['Respect all members', 'Have fun!'],
@@ -134,13 +258,12 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Weekend Crew" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[#aaeb00]/50" />
           </div>
           <div>
-            <label className="text-white/50 text-xs font-semibold mb-1 block">Sport</label>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Logo / Emoji</label>
             <div className="flex flex-wrap gap-1.5">
-              {Object.entries(SPORT_CONFIG).map(([key, cfg]) => (
-                <button key={key} onClick={() => setSport(key as SportType)}
-                  className={clsx('px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', sport === key ? 'text-white border border-white/20' : 'text-white/40 border border-transparent')}
-                  style={sport === key ? { background: cfg.bg } : {}}
-                >{cfg.emoji} {cfg.label}</button>
+              {LOGO_OPTIONS.map(em => (
+                <button key={em} onClick={() => setLogo(em)}
+                  className={clsx('w-10 h-10 rounded-xl text-lg transition-all', logo === em ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5')}
+                >{em}</button>
               ))}
             </div>
           </div>
@@ -178,7 +301,6 @@ export const GroupDetailPage: React.FC = () => {
   const group = GROUPS.find(g => g.id === id);
   if (!group) return <div className="min-h-screen flex items-center justify-center"><p className="text-white/50">Group not found</p></div>;
 
-  const sportCfg = SPORT_CONFIG[group.sport];
   const upcomingEvents = getUpcomingGroupEvents(group.id);
   const completedEvents = getCompletedGroupEvents(group.id);
 
@@ -188,7 +310,7 @@ export const GroupDetailPage: React.FC = () => {
     return bStats.winRate - aStats.winRate;
   });
 
-  const TABS = ['Members', 'Rankings', 'Events', 'Invite'];
+  const TABS = ['Members', 'Rankings', 'Events', 'Calendar', 'Invite'];
 
   return (
     <div className="pb-24 max-w-lg mx-auto">
@@ -201,13 +323,13 @@ export const GroupDetailPage: React.FC = () => {
       <div className="px-4 -mt-10 space-y-4">
         <FadeUp>
           <div className="flex items-start gap-3">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border-2 border-white/20 shadow-lg flex-shrink-0 -mt-2" style={{ background: sportCfg.bg }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border-2 border-white/20 shadow-lg flex-shrink-0 -mt-2 glass">
               {group.logo}
             </div>
             <div className="flex-1">
               <h1 className="font-display font-black text-xl text-white">{group.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-white/50 text-sm">{sportCfg.emoji} {sportCfg.label}</span>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {group.tags.map(tag => <SportBadge key={tag} sport={tag} />)}
                 {group.isPrivate ? <Badge variant="glass" size="sm">🔒 Private</Badge> : <Badge variant="green" size="sm">🌐 Public</Badge>}
               </div>
               <p className="text-white/60 text-sm mt-2 leading-relaxed">{group.description}</p>
@@ -304,7 +426,7 @@ export const GroupDetailPage: React.FC = () => {
                     {upcomingEvents.map(event => (
                       <Card key={event.id} interactive padding="md" onClick={() => navigate(`/events/${event.id}`)}>
                         <div className="flex gap-3 items-start">
-                          <span className="text-2xl">{SPORT_CONFIG[event.sport].emoji}</span>
+                          <span className="text-2xl">{SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]?.emoji || '📅'}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white text-sm truncate">{event.title}</p>
                             <p className="text-white/50 text-xs">{event.date} · {event.time} · {event.venue}</p>
@@ -328,9 +450,9 @@ export const GroupDetailPage: React.FC = () => {
                 {completedEvents.length > 0 ? (
                   <div className="space-y-3">
                     {completedEvents.map(event => (
-                      <Card key={event.id} padding="md">
+                      <Card key={event.id} padding="md" interactive onClick={() => navigate(`/events/${event.id}`)}>
                         <div className="flex gap-3 items-start mb-3">
-                          <span className="text-xl">{SPORT_CONFIG[event.sport].emoji}</span>
+                          <span className="text-xl">{SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]?.emoji || '📅'}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white text-sm">{event.title}</p>
                             <p className="text-white/40 text-xs">{event.date} · {event.venue}</p>
@@ -371,6 +493,12 @@ export const GroupDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {tab === 'Calendar' && (
+            <motion.div key="calendar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <CalendarView groupId={group.id} />
             </motion.div>
           )}
 
@@ -491,29 +619,26 @@ export const GroupsPage: React.FC = () => {
           className="mb-3"
         />
         <StaggerList className="space-y-3">
-          {myCreatedGroups.map(group => {
-            const cfg = SPORT_CONFIG[group.sport];
-            return (
-              <StaggerItem key={group.id}>
-                <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
-                  <div className="relative h-24 overflow-hidden">
-                    <img src={group.banner} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
-                    <div className="absolute inset-0 p-4 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: cfg.bg, border: `1px solid ${cfg.color}40` }}>
-                        {group.logo}
-                      </div>
-                      <div>
-                        <p className="font-display font-bold text-white">{group.name}</p>
-                        <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
-                      </div>
-                      <div className="ml-auto"><Badge variant="amber">👑 Creator</Badge></div>
+          {myCreatedGroups.map(group => (
+            <StaggerItem key={group.id}>
+              <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
+                <div className="relative h-24 overflow-hidden">
+                  <img src={group.banner} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
+                  <div className="absolute inset-0 p-4 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 glass">
+                      {group.logo}
                     </div>
+                    <div>
+                      <p className="font-display font-bold text-white">{group.name}</p>
+                      <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
+                    </div>
+                    <div className="ml-auto"><Badge variant="amber">👑 Creator</Badge></div>
                   </div>
-                </Card>
-              </StaggerItem>
-            );
-          })}
+                </div>
+              </Card>
+            </StaggerItem>
+          ))}
           {myCreatedGroups.length === 0 && (
             <div className="glass rounded-2xl p-6 text-center">
               <p className="text-2xl mb-1">📁</p>
@@ -526,28 +651,25 @@ export const GroupsPage: React.FC = () => {
       <FadeUp delay={0.15}>
         <SectionHeader title="⚡ Joined" className="mb-3" />
         <StaggerList className="space-y-3">
-          {myJoinedGroups.map(group => {
-            const cfg = SPORT_CONFIG[group.sport];
-            return (
-              <StaggerItem key={group.id}>
-                <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
-                  <div className="relative h-24 overflow-hidden">
-                    <img src={group.banner} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
-                    <div className="absolute inset-0 p-4 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: cfg.bg }}>
-                        {group.logo}
-                      </div>
-                      <div>
-                        <p className="font-display font-bold text-white">{group.name}</p>
-                        <p className="text-white/50 text-xs">{group.memberCount} members · {cfg.label}</p>
-                      </div>
+          {myJoinedGroups.map(group => (
+            <StaggerItem key={group.id}>
+              <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
+                <div className="relative h-24 overflow-hidden">
+                  <img src={group.banner} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
+                  <div className="absolute inset-0 p-4 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 glass">
+                      {group.logo}
+                    </div>
+                    <div>
+                      <p className="font-display font-bold text-white">{group.name}</p>
+                      <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
                     </div>
                   </div>
-                </Card>
-              </StaggerItem>
-            );
-          })}
+                </div>
+              </Card>
+            </StaggerItem>
+          ))}
           {myJoinedGroups.length === 0 && (
             <div className="glass rounded-2xl p-6 text-center">
               <p className="text-2xl mb-1">🔍</p>
@@ -561,25 +683,22 @@ export const GroupsPage: React.FC = () => {
         <FadeUp delay={0.2}>
           <SectionHeader title="🔍 Discover Groups" subtitle="Explore and join" className="mb-3" />
           <StaggerList className="space-y-3">
-            {discoverGroups.map(group => {
-              const cfg = SPORT_CONFIG[group.sport];
-              return (
-                <StaggerItem key={group.id}>
-                  <Card padding="md">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: cfg.bg }}>
-                        {group.logo}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-white">{group.name}</p>
-                        <p className="text-white/50 text-xs">{group.memberCount} members · {cfg.label}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => joinGroup(group.id)}>Join</Button>
+            {discoverGroups.map(group => (
+              <StaggerItem key={group.id}>
+                <Card padding="md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 glass">
+                      {group.logo}
                     </div>
-                  </Card>
-                </StaggerItem>
-              );
-            })}
+                    <div className="flex-1">
+                      <p className="font-bold text-white">{group.name}</p>
+                      <p className="text-white/50 text-xs">{group.memberCount} members</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => joinGroup(group.id)}>Join</Button>
+                  </div>
+                </Card>
+              </StaggerItem>
+            ))}
           </StaggerList>
         </FadeUp>
       )}

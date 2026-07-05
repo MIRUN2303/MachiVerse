@@ -257,7 +257,6 @@ export const GROUPS: Group[] = [
     logo: '🏸',
     banner: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80',
     description: 'The original badminton crew. Every weekend, no excuses. We sweat, we laugh, we dominate.',
-    sport: 'badminton',
     memberCount: 6,
     members: [
       { userId: 'u1', role: 'creator', joinedAt: '2024-01-10', stats: { matchesPlayed: 8, wins: 5, losses: 3, winRate: 63, attendanceRate: 96, currentStreak: 6, points: 1240 } },
@@ -280,7 +279,6 @@ export const GROUPS: Group[] = [
     logo: '🥾',
     banner: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80',
     description: 'We trek, we cycle, we conquer. Weekend adventurers exploring the outdoors together.',
-    sport: 'trekking',
     memberCount: 4,
     members: [
       { userId: 'u2', role: 'creator', joinedAt: '2024-02-15', stats: { matchesPlayed: 5, wins: 4, losses: 1, winRate: 80, attendanceRate: 86, currentStreak: 4, points: 680 } },
@@ -561,8 +559,12 @@ export const computeMemberGroupStats = (userId: string, groupId: string) => {
   let matchesPlayed = 0;
   let wins = 0;
   let losses = 0;
+  const sportMap: Record<string, { matchesPlayed: number; wins: number; losses: number }> = {};
 
   for (const event of completedEvents) {
+    const sport = event.sport;
+    if (!sportMap[sport]) sportMap[sport] = { matchesPlayed: 0, wins: 0, losses: 0 };
+
     for (const league of event.leagues) {
       for (const match of league.matches) {
         const team1 = league.teams.find(t => t.id === match.team1Id);
@@ -571,22 +573,34 @@ export const computeMemberGroupStats = (userId: string, groupId: string) => {
         const inTeam2 = team2?.playerIds.includes(userId);
         if (!inTeam1 && !inTeam2) continue;
         matchesPlayed++;
+        sportMap[sport].matchesPlayed++;
         if (match.winnerId) {
           if ((inTeam1 && match.winnerId === match.team1Id) || (inTeam2 && match.winnerId === match.team2Id)) {
             wins++;
+            sportMap[sport].wins++;
           } else {
             losses++;
+            sportMap[sport].losses++;
           }
         }
       }
     }
   }
 
+  const sportBreakdown = Object.entries(sportMap).map(([sport, s]) => ({
+    sport,
+    matchesPlayed: s.matchesPlayed,
+    wins: s.wins,
+    losses: s.losses,
+    winRate: s.matchesPlayed > 0 ? Math.round((s.wins / s.matchesPlayed) * 100) : 0,
+  }));
+
   return {
     matchesPlayed,
     wins,
     losses,
     winRate: matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0,
+    sportBreakdown,
   };
 };
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AttendanceStatus, Notification, Event, Group, SportType } from '../data/types';
+import type { AttendanceStatus, Notification, Event, Group } from '../data/types';
 import { EVENTS, NOTIFICATIONS, GROUPS, USERS, setCurrentUserId, getUserById, getUserByEmail, getUserByPhone, getUserByProfileCode, generateId } from '../data/mockData';
 import toast from 'react-hot-toast';
 
@@ -24,7 +24,6 @@ interface CreateEventInput {
 
 interface CreateGroupInput {
   name: string;
-  sport: SportType;
   description: string;
   isPrivate: boolean;
   rules: string[];
@@ -152,8 +151,7 @@ export const useAppStore = create<AppState>()(
         const newId = uid();
         const currentUserId = get().currentUserId || '';
         const now = new Date().toISOString();
-        const group = GROUPS.find(g => g.id === input.groupId);
-        const sport = (input.sport || group?.sport || 'custom') as any;
+        const sport = (input.sport || 'custom') as any;
 
         const newEvent: Event = {
           id: newId,
@@ -166,7 +164,7 @@ export const useAppStore = create<AppState>()(
           venue: input.venue,
           venueAddress: '',
           description: input.description || '',
-          coverImage: input.coverImage || group?.banner || '',
+          coverImage: input.coverImage || '',
           organizer: currentUserId,
           maxSlots: input.maxSlots || 12,
           weather: { condition: 'TBD', temp: 28, icon: '☀️', humidity: 60, wind: 10 },
@@ -186,10 +184,11 @@ export const useAppStore = create<AppState>()(
           events: [...state.events, newEvent],
         }));
 
+        const grp = get().groups.find(g => g.id === input.groupId);
         get().addNotification({
           type: 'event',
           title: `New Event: ${input.title}`,
-          body: `Created in ${group?.name || 'your group'}. Invite your crew!`,
+          body: `Created in ${grp?.name || 'your group'}. Invite your crew!`,
           read: false,
           actionUrl: `/events/${newId}`,
           avatar: '📅',
@@ -275,10 +274,9 @@ export const useAppStore = create<AppState>()(
         const newGroup: Group = {
           id: newId,
           name: input.name,
-          logo: input.sport === 'badminton' ? '🏸' : input.sport === 'cricket' ? '🏏' : input.sport === 'football' ? '⚽' : input.sport === 'trekking' ? '🥾' : input.sport === 'cycling' ? '🚴' : input.sport === 'running' ? '🏃' : input.sport === 'cafe' ? '☕' : '🎯',
+          logo: '🎯',
           banner: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
           description: input.description,
-          sport: input.sport,
           memberCount: 1,
           members: [{
             userId: currentUserId,
@@ -289,7 +287,7 @@ export const useAppStore = create<AppState>()(
           createdAt: new Date().toISOString().split('T')[0],
           rules: input.rules,
           isPrivate: input.isPrivate,
-          tags: [input.sport],
+          tags: [],
           upcomingEvents: 0,
           totalEvents: 0,
         };

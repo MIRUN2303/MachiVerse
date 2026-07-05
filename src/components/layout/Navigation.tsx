@@ -6,7 +6,6 @@ import { useAppStore } from '../../store/useAppStore';
 
 const NAV_ITEMS = [
   { path: '/home',        icon: '⌂',  label: 'Home'    },
-  { path: '/events',      icon: '◈',  label: 'Events'  },
   { path: '/leaderboard', icon: '◉',  label: 'Ranks'   },
   { path: '/groups',      icon: '◎',  label: 'Groups'  },
   { path: '/profile',     icon: '◐',  label: 'Profile' },

@@ -8,7 +8,7 @@ import { LandingPage } from './features/landing/LandingPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
 import { HomePage } from './features/home/HomePage';
-import { EventsPage, EventDetailPage } from './features/events/EventsPage';
+import { EventDetailPage } from './features/events/EventsPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
 import { LeaderboardPage } from './features/leaderboard/LeaderboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
@@ -68,7 +68,6 @@ const AppContent: React.FC = () => {
               <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
               <Route path="/signup" element={<PageWrapper><SignupPage /></PageWrapper>} />
               <Route path="/home" element={<PageWrapper><ProtectedRoute><HomePage /></ProtectedRoute></PageWrapper>} />
-              <Route path="/events" element={<PageWrapper><ProtectedRoute><EventsPage /></ProtectedRoute></PageWrapper>} />
               <Route path="/events/:id" element={<PageWrapper><ProtectedRoute><EventDetailPage /></ProtectedRoute></PageWrapper>} />
               <Route path="/calendar" element={<PageWrapper><ProtectedRoute><CalendarPage /></ProtectedRoute></PageWrapper>} />
               <Route path="/leaderboard" element={<PageWrapper><ProtectedRoute><LeaderboardPage /></ProtectedRoute></PageWrapper>} />

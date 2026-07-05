@@ -59,7 +59,6 @@ export interface Group {
   logo: string;
   banner: string;
   description: string;
-  sport: SportType;
   memberCount: number;
   members: GroupMember[];
   createdAt: string;

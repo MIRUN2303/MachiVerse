@@ -34,7 +34,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
 
   const [groupId, setGroupId] = useState(preselectedGroupId || myGroups[0]?.id || '');
   const [title, setTitle] = useState('');
-  const [sport, setSport] = useState(storeGroups.find(g => g.id === (preselectedGroupId || myGroups[0]?.id))?.sport || 'badminton');
+  const [sport, setSport] = useState('badminton');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('19:00');
   const [endTime, setEndTime] = useState('22:00');
@@ -44,12 +44,6 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [step, setStep] = useState<'details' | 'schedule'>('details');
   const [loading, setLoading] = useState(false);
-
-  const handleGroupChange = (gid: string) => {
-    setGroupId(gid);
-    const grp = storeGroups.find(g => g.id === gid);
-    if (grp) setSport(grp.sport as any);
-  };
 
   const selectedGroup = storeGroups.find(g => g.id === groupId);
   const sportCfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
@@ -156,7 +150,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           <div className="flex gap-2 overflow-x-auto scrollbar-hidden pb-1">
                             {myGroups.map(g => (
                               <motion.button key={g.id}
-                                onClick={() => handleGroupChange(g.id)}
+                                onClick={() => setGroupId(g.id)}
                                 className="flex items-center gap-2 px-3 py-2.5 rounded-2xl whitespace-nowrap text-sm font-semibold transition-all border flex-shrink-0"
                                 style={groupId === g.id
                                   ? { background: 'rgba(170,235,0,0.1)', borderColor: '#aaeb00', color: '#aaeb00' }
