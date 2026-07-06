@@ -34,6 +34,7 @@ export const EventDetailPage: React.FC = () => {
   const editEvent = useAppStore(s => s.editEvent);
   const [galleryIdx, setGalleryIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [showLeagueSetup, setShowLeagueSetup] = useState(false);
   const [leagueName, setLeagueName] = useState('');
   const [leagueFormat, setLeagueFormat] = useState<'single' | 'doubles'>('doubles');
@@ -626,13 +627,17 @@ export const EventDetailPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-white/30">{event.gallery.length}/10</span>
                 {event.gallery.length < 10 && event.status !== 'completed' && (
-                  <Button variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>+ Add</Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>📁</Button>
+                    <Button variant="ghost" size="sm" onClick={() => cameraRef.current?.click()}>📷</Button>
+                  </div>
                 )}
               </div>
             }
             className="mb-3"
           />
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleUpload} />
           {event.gallery.length > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               {event.gallery.map((img, i) => (
