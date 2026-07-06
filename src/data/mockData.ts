@@ -298,7 +298,7 @@ export const GROUPS: Group[] = [
 export const EVENTS: Event[] = [
   // ---- UPCOMING ----
   {
-    id: 'e1', title: 'Weekend Badminton Session', sport: 'badminton', groupId: 'g1',
+    id: 'e1', title: 'Weekend Badminton Session', sport: 'badminton', category: 'badminton', groupId: 'g1', summary: '',
     date: getDate(2), time: '19:00', endTime: '22:00',
     venue: 'Sportorium Badminton Court', venueAddress: 'No. 12, Anna Salai, Chennai 600002',
     description: 'Our weekly badminton showdown! 4 leagues, best of 3 format.',
@@ -332,7 +332,7 @@ export const EVENTS: Event[] = [
     gallery: [], tags: ['badminton', 'weekly', 'competitive'],
   },
   {
-    id: 'e2', title: 'Sunday Café Meetup', sport: 'cafe', groupId: 'g1',
+    id: 'e2', title: 'Sunday Café Meetup', sport: 'cafe', category: 'cafe', groupId: 'g1', summary: '',
     date: getDate(3), time: '10:30', endTime: '12:30',
     venue: 'Brew Collective', venueAddress: '5th Ave, Nungambakkam, Chennai',
     description: 'Chill Sunday brunch and planning session.',
@@ -350,7 +350,7 @@ export const EVENTS: Event[] = [
     announcements: [], gallery: [], tags: ['chill', 'social'],
   },
   {
-    id: 'e3', title: 'Cricket Tournament Day 1', sport: 'cricket', groupId: 'g1',
+    id: 'e3', title: 'Cricket Tournament Day 1', sport: 'cricket', category: 'badminton', groupId: 'g1', summary: '',
     date: getDate(9), time: '08:00', endTime: '18:00',
     venue: 'M.A. Chidambaram Stadium (Practice Ground)', venueAddress: 'Chepauk, Chennai 600005',
     description: 'Our first full-day cricket tournament! 3 teams, round-robin format.',
@@ -369,7 +369,7 @@ export const EVENTS: Event[] = [
     gallery: [], tags: ['cricket', 'tournament'],
   },
   {
-    id: 'e4', title: 'Yelagiri Hills Trek', sport: 'trekking', groupId: 'g2',
+    id: 'e4', title: 'Yelagiri Hills Trek', sport: 'trekking', category: 'roaming', groupId: 'g2', summary: '',
     date: getDate(14), time: '05:30', endTime: '17:00',
     venue: 'Yelagiri Hills Base Camp', venueAddress: 'Yelagiri, Tamil Nadu 635853',
     description: 'Sunrise trek to the summit! Easy-medium difficulty.',
@@ -390,7 +390,7 @@ export const EVENTS: Event[] = [
   },
   // ---- COMPLETED with proper match data for win rate calc ----
   {
-    id: 'e5', title: 'Friday Night Badminton', sport: 'badminton', groupId: 'g1',
+    id: 'e5', title: 'Friday Night Badminton', sport: 'badminton', category: 'badminton', groupId: 'g1', summary: '',
     date: getDate(-7), time: '20:00', endTime: '23:00',
     venue: 'Sportorium Badminton Court', venueAddress: 'No. 12, Anna Salai, Chennai 600002',
     description: 'The legendary Friday session. 4 leagues played, epic matches!',
@@ -440,7 +440,7 @@ export const EVENTS: Event[] = [
     tags: ['badminton', 'weekly', 'completed'],
   },
   {
-    id: 'e6', title: 'Weekend Doubles Tournament', sport: 'badminton', groupId: 'g1',
+    id: 'e6', title: 'Weekend Doubles Tournament', sport: 'badminton', category: 'badminton', groupId: 'g1', summary: '',
     date: getDate(-14), time: '16:00', endTime: '20:00',
     venue: 'Sportorium Badminton Court', venueAddress: 'No. 12, Anna Salai, Chennai 600002',
     description: 'Doubles tournament! 4 teams competing.',
@@ -499,7 +499,7 @@ export const EVENTS: Event[] = [
     tags: ['badminton', 'tournament', 'doubles'],
   },
   {
-    id: 'e7', title: 'Trail Trek – Kodaikanal', sport: 'trekking', groupId: 'g2',
+    id: 'e7', title: 'Trail Trek – Kodaikanal', sport: 'trekking', category: 'roaming', groupId: 'g2', summary: '',
     date: getDate(-21), time: '06:00', endTime: '16:00',
     venue: 'Kodaikanal Base Camp', venueAddress: 'Kodaikanal, Tamil Nadu',
     description: 'Weekend trek to the beautiful Kodaikanal hills.',

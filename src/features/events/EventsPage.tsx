@@ -44,7 +44,7 @@ export const EventDetailPage: React.FC = () => {
   const [matchForm, setMatchForm] = useState<{ leagueId: string; side1: string[]; side2: string[]; score1: string; score2: string; name: string; isFinal: boolean } | null>(null);
   const [showEditDetails, setShowEditDetails] = useState(false);
   const [editFields, setEditFields] = useState({ title: '', date: '', time: '', endTime: '', venue: '', description: '' });
-  const [summaryText, setSummaryText] = useState(event?.summary || '');
+  const [summaryText, setSummaryText] = useState('');
   const [confirmAction, setConfirmAction] = useState<{ label: string; onConfirm: () => void } | null>(null);
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaWord, setCaptchaWord] = useState('');
@@ -74,8 +74,8 @@ export const EventDetailPage: React.FC = () => {
   const isEditable = isEventAdmin && (event.status === 'upcoming' || event.status === 'live' || event.status === 'paused');
 
   useEffect(() => {
-    setSummaryText(event.summary || '');
-  }, [event.id]);
+    if (event) setSummaryText(event.summary || '');
+  }, [event?.id]);
 
   if (!event) return (
     <div className="min-h-screen flex items-center justify-center">
