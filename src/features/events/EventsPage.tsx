@@ -48,7 +48,7 @@ export const EventDetailPage: React.FC = () => {
   const [captchaWord, setCaptchaWord] = useState('');
 
   const generateCaptcha = useCallback(() => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const chars = 'abcdefghjklmnpqrstuvwxyz23456789';
     let word = '';
     for (let i = 0; i < 5; i++) word += chars[Math.floor(Math.random() * chars.length)];
     setCaptchaWord(word);
@@ -250,6 +250,10 @@ export const EventDetailPage: React.FC = () => {
                 )}
                 {event.status === 'live' && (
                   <>
+                    <Button variant="lime" size="sm" className="flex-1"
+                      onClick={() => editEvent(event.id, { title: event.title, date: event.date, time: event.time, endTime: event.endTime, venue: event.venue, description: event.description })}>
+                      Save
+                    </Button>
                     <Button variant="ghost" size="sm" className="flex-1"
                       onClick={() => promptConfirm('Pause & Save', () => pauseEvent(event.id))}>
                       Pause & Save
@@ -715,7 +719,7 @@ export const EventDetailPage: React.FC = () => {
                 <input
                   type="text"
                   value={captchaInput}
-                  onChange={e => setCaptchaInput(e.target.value.toUpperCase())}
+                  onChange={e => setCaptchaInput(e.target.value.toLowerCase())}
                   placeholder="Type the word above"
                   autoFocus
                   className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none mb-4 text-center tracking-[0.2em] uppercase"
