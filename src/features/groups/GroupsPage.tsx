@@ -34,9 +34,10 @@ const SportBadge: React.FC<{ sport: string; size?: 'sm' | 'xs' }> = ({ sport, si
 // =============================================
 // MEMBER DROPDOWN
 // =============================================
-const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId, groupId }) => {
+const MemberDropdown: React.FC<{ userId: string; groupId: string; currentUserRole?: string }> = ({ userId, groupId, currentUserRole }) => {
   const user = getUserById(userId);
   const [open, setOpen] = useState(false);
+  const updateMemberRole = useAppStore(s => s.updateMemberRole);
   if (!user) return null;
 
   const computed = computeMemberGroupStats(userId, groupId);
@@ -44,6 +45,11 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
   const group = getGroupById(groupId);
   const member = group?.members.find(m => m.userId === userId);
   const roleCfg = ROLE_CONFIG[member?.role || 'member'] as typeof ROLE_CONFIG[keyof typeof ROLE_CONFIG];
+  const isCreator = currentUserRole === 'creator';
+  const isSelf = userId === useAppStore.getState().currentUserId;
+  const adminCount = group?.members.filter(m => m.role === 'admin').length || 0;
+  const canPromote = isCreator && !isSelf && member?.role === 'member' && adminCount < 2;
+  const canDemote = isCreator && !isSelf && member?.role === 'admin';
 
   return (
     <div>
@@ -83,7 +89,6 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
                 <StatItem label="Win Rate" value={`${computed.winRate}%`} color={computed.winRate >= 60 ? '#10b981' : computed.winRate >= 40 ? '#f59e0b' : '#ef4444'} />
               </div>
 
-              {/* Per-sport breakdown */}
               {computed.sportBreakdown.length > 0 && (
                 <>
                   <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">🏅 Per Sport</p>
@@ -112,6 +117,21 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string }> = ({ userId,
                 <StatItem label="Total Losses" value={overall.totalLosses} color="#ef4444" />
                 <StatItem label="Overall WR" value={`${overall.overallWinRate}%`} color={overall.overallWinRate >= 60 ? '#10b981' : overall.overallWinRate >= 40 ? '#f59e0b' : '#ef4444'} />
               </div>
+
+              {canPromote && (
+                <button onClick={() => { updateMemberRole(groupId, userId, 'admin'); setOpen(false); }}
+                  className="w-full mt-3 text-xs font-bold py-2 rounded-xl transition-all"
+                  style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}>
+                  🛡️ Make Admin
+                </button>
+              )}
+              {canDemote && (
+                <button onClick={() => { updateMemberRole(groupId, userId, 'member'); setOpen(false); }}
+                  className="w-full mt-3 text-xs font-bold py-2 rounded-xl transition-all"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
+                  Remove Admin
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -166,7 +186,7 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
 
   const groups = useAppStore(s => s.groups);
   const grp = groups.find(g => g.id === groupId);
-  const isAdmin = grp?.members.some(m => m.userId === currentUserId && (m.role === 'creator' || m.role === 'admin'));
+  const isMember = grp?.members.some(m => m.userId === currentUserId);
 
   return (
     <div>
@@ -244,7 +264,7 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
               <p className="text-xs font-semibold text-white/50">
                 {new Date(year, month, selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </p>
-              {isAdmin && (
+              {isMember && (
                 <button onClick={() => setShowCreate(true)}
                   className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95"
                   style={{ background: '#00ff41', color: '#080808' }}>
@@ -282,7 +302,7 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
               <div className="text-center py-6 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.06)' }}>
                 <p className="text-2xl mb-1">📅</p>
                 <p className="text-white/30 text-xs">No events on this day</p>
-                {isAdmin && (
+                {isMember && (
                   <button onClick={() => setShowCreate(true)}
                     className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all active:scale-95"
                     style={{ background: 'rgba(0,255,65,0.1)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}>
@@ -406,10 +426,18 @@ export const GroupDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState('Members');
   const [showCreate, setShowCreate] = useState(false);
+  const [editGroup, setEditGroup] = useState(false);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupRules, setEditGroupRules] = useState('');
   const currentUserId = useAppStore(s => s.currentUserId);
+  const updateGroupDetails = useAppStore(s => s.updateGroupDetails);
 
   const group = GROUPS.find(g => g.id === id);
   if (!group) return <div className="min-h-screen flex items-center justify-center"><p className="text-white/50">Group not found</p></div>;
+
+  const myMember = group.members.find(m => m.userId === currentUserId);
+  const myRole = myMember?.role;
 
   const upcomingEvents = getUpcomingGroupEvents(group.id);
   const completedEvents = getCompletedGroupEvents(group.id);
@@ -472,7 +500,51 @@ export const GroupDetailPage: React.FC = () => {
         <FadeUp delay={0.08}>
           <div className="flex items-center gap-2 text-xs text-white/40 glass rounded-2xl p-2.5">
             <span>👤 Created by {getUserById(group.members.find(m => m.role === 'creator')?.userId || '')?.name}</span>
+            {myRole === 'creator' && (
+              <button onClick={() => {
+                setEditGroup(v => !v);
+                setEditGroupName(group.name);
+                setEditGroupDesc(group.description);
+                setEditGroupRules(group.rules.join('\n'));
+              }} className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg transition-all"
+                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+                {editGroup ? 'Cancel' : '✏️ Edit'}
+              </button>
+            )}
           </div>
+          {editGroup && myRole === 'creator' && (
+            <FadeUp>
+              <Card padding="md" variant="dark" className="space-y-3">
+                <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Edit Group</p>
+                <div>
+                  <label className="text-white/50 text-[10px] font-semibold mb-1 block">Name</label>
+                  <input value={editGroupName} onChange={e => setEditGroupName(e.target.value)}
+                    className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-[#00ff41]" />
+                </div>
+                <div>
+                  <label className="text-white/50 text-[10px] font-semibold mb-1 block">Description</label>
+                  <textarea value={editGroupDesc} onChange={e => setEditGroupDesc(e.target.value)} rows={2}
+                    className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-[#00ff41] resize-none" />
+                </div>
+                <div>
+                  <label className="text-white/50 text-[10px] font-semibold mb-1 block">Rules (one per line)</label>
+                  <textarea value={editGroupRules} onChange={e => setEditGroupRules(e.target.value)} rows={3}
+                    className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-[#00ff41] resize-none" />
+                </div>
+                <Button variant="lime" size="sm" className="w-full"
+                  onClick={() => {
+                    updateGroupDetails(group.id, {
+                      name: editGroupName.trim() || group.name,
+                      description: editGroupDesc.trim(),
+                      rules: editGroupRules.split('\n').filter(r => r.trim()),
+                    });
+                    setEditGroup(false);
+                  }}>
+                  Save Group
+                </Button>
+              </Card>
+            </FadeUp>
+          )}
         </FadeUp>
 
         <FadeUp delay={0.1}>
@@ -492,7 +564,7 @@ export const GroupDetailPage: React.FC = () => {
                 <span>👥 Members ({group.members.length})</span>
               </p>
               {group.members.map(member => (
-                <MemberDropdown key={member.userId} userId={member.userId} groupId={group.id} />
+                <MemberDropdown key={member.userId} userId={member.userId} groupId={group.id} currentUserRole={myRole} />
               ))}
             </motion.div>
           )}

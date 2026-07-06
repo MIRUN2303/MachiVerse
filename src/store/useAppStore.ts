@@ -93,6 +93,7 @@ interface AppState {
   editEvent: (eventId: string, updates: Partial<Pick<Event, 'title' | 'date' | 'time' | 'endTime' | 'venue' | 'description'>>) => void;
   updateEventSummary: (eventId: string, summary: string) => void;
   completeEvent: (eventId: string) => void;
+  cancelEvent: (eventId: string) => void;
 
   getGroupEvents: (groupId: string) => Event[];
   getNextGroupEvent: (groupId: string) => Event | undefined;
@@ -111,6 +112,8 @@ interface AppState {
   createGroup: (input: CreateGroupInput) => string;
   joinGroup: (groupId: string) => void;
   inviteByProfileCode: (groupId: string, profileCode: string) => boolean;
+  updateGroupDetails: (groupId: string, updates: Partial<Pick<Group, 'name' | 'description' | 'rules'>>) => void;
+  updateMemberRole: (groupId: string, userId: string, role: 'admin' | 'member') => void;
 
   stories: Story[];
   friendships: Friendship[];
@@ -427,6 +430,19 @@ export const useAppStore = create<AppState>()(
           .catch(e => console.warn('Failed to complete event', e));
       },
 
+      cancelEvent: (eventId) => {
+        const event = get().events.find(e => e.id === eventId);
+        if (!event || event.status === 'completed' || event.status === 'cancelled') return;
+        set(s => ({
+          events: s.events.map(e =>
+            e.id === eventId ? { ...e, status: 'cancelled' as const } : e
+          ),
+        }));
+        db.updateEventInDb(eventId, { status: 'cancelled' })
+          .catch(e => console.warn('Failed to cancel event', e));
+        toast.success('Event cancelled');
+      },
+
       deleteMatch: (eventId, leagueId, matchId) => {
         set(s => ({
           events: s.events.map(e =>
@@ -622,6 +638,29 @@ export const useAppStore = create<AppState>()(
 
         toast.success(`Invited ${invitedUser.name} to the group!`);
         return true;
+      },
+
+      updateGroupDetails: (groupId, updates) => {
+        set(s => ({
+          groups: s.groups.map(g =>
+            g.id === groupId ? { ...g, ...updates } : g
+          ),
+        }));
+        db.updateGroup(groupId, updates)
+          .catch(e => console.warn('Failed to update group details', e));
+        toast.success('Group updated');
+      },
+
+      updateMemberRole: (groupId, userId, role) => {
+        set(s => ({
+          groups: s.groups.map(g =>
+            g.id === groupId
+              ? { ...g, members: g.members.map(m => m.userId === userId ? { ...m, role } : m) }
+              : g
+          ),
+        }));
+        db.updateGroupMemberRole(groupId, userId, role)
+          .catch(e => console.warn('Failed to update member role', e));
       },
 
       // ---- FRIENDS ----

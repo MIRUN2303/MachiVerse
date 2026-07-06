@@ -129,6 +129,8 @@ export const EventDetailPage: React.FC = () => {
             ? <Badge variant="amber" dot>⏸ Paused</Badge>
             : event.status === 'completed'
             ? <Badge variant="glass">✓ History</Badge>
+            : event.status === 'cancelled'
+            ? <Badge variant="glass">🚫 Cancelled</Badge>
             : <Badge variant="green" dot>Upcoming</Badge>
           }
           {isEditable && (
@@ -291,6 +293,12 @@ export const EventDetailPage: React.FC = () => {
                   Edit Details
                 </Button>
               </div>
+              <div className="flex gap-2">
+                <Button variant="danger" size="sm" className="flex-1"
+                  onClick={() => promptConfirm('Cancel Event', () => { useAppStore.getState().cancelEvent(event.id); })}>
+                  🚫 Cancel Event
+                </Button>
+              </div>
 
               {showEditDetails && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2 overflow-hidden">
@@ -353,7 +361,7 @@ export const EventDetailPage: React.FC = () => {
         )}
 
         {/* ROUTE INFO (for cycling events) */}
-        {event.category === 'cycling' && (event.status === 'live' || event.status === 'completed') && (
+        {event.category === 'cycling' && (event.status === 'live' || event.status === 'completed' || event.status === 'cancelled') && (
           <FadeUp delay={0.1}>
             <SectionHeader title="🚴 Route" className="mb-3" />
             <Card padding="md" variant="dark">
@@ -395,7 +403,7 @@ export const EventDetailPage: React.FC = () => {
         )}
 
         {/* SUMMARY (for non-badminton events) */}
-        {event.category !== 'badminton' && (event.status === 'live' || event.status === 'completed') && (
+        {event.category !== 'badminton' && (event.status === 'live' || event.status === 'completed' || event.status === 'cancelled') && (
           <FadeUp delay={0.15}>
             <SectionHeader
               title="📝 Summary"
@@ -863,7 +871,7 @@ export const EventsPage: React.FC = () => {
 
   const filtered = events
     .filter(e => myGroupIds.includes(e.groupId))
-    .filter(e => filter === 'all' || (filter === 'active' ? (e.status === 'upcoming' || e.status === 'live' || e.status === 'paused') : e.status === filter))
+    .filter(e => filter === 'all' || (filter === 'active' ? (e.status === 'upcoming' || e.status === 'live' || e.status === 'paused') : (e.status === 'completed' || e.status === 'cancelled')))
     .sort((a, b) => {
       if (a.status === 'live' && b.status !== 'live') return -1;
       if (b.status === 'live' && a.status !== 'live') return 1;
@@ -910,8 +918,8 @@ export const EventsPage: React.FC = () => {
                   <img src={event.coverImage} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0f0a1e] via-[#0f0a1e]/30 to-transparent" />
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <Badge variant={event.status === 'upcoming' ? 'blue' : 'glass'}>
-                      {event.status === 'upcoming' ? '⚡ Upcoming' : '✓ Done'}
+                    <Badge variant={event.status === 'upcoming' ? 'blue' : event.status === 'live' ? 'lime' : event.status === 'cancelled' ? 'glass' : 'glass'}>
+                      {event.status === 'upcoming' ? '⚡ Upcoming' : event.status === 'live' ? '🔴 Live' : event.status === 'paused' ? '⏸ Paused' : event.status === 'cancelled' ? '🚫 Cancelled' : '✓ Done'}
                     </Badge>
                     {event.isRecurring && <Badge variant="glass">🔁</Badge>}
                     {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <Badge variant="glass">{g.logo} {g.name}</Badge> : null; })()}
