@@ -1,0 +1,6 @@
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS start_point text DEFAULT '',
+ADD COLUMN IF NOT EXISTS end_point text DEFAULT '',
+ADD COLUMN IF NOT EXISTS gather_point text DEFAULT '',
+ADD COLUMN IF NOT EXISTS distance text DEFAULT '',
+ADD COLUMN IF NOT EXISTS motivation text DEFAULT '';

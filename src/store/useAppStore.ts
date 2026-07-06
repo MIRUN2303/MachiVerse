@@ -38,6 +38,11 @@ interface CreateEventInput {
   maxSlots?: number;
   isRecurring?: boolean;
   recurringPattern?: string;
+  startPoint?: string;
+  endPoint?: string;
+  gatherPoint?: string;
+  distance?: string;
+  motivation?: string;
 }
 
 interface CreateLiveEventInput {
@@ -47,6 +52,11 @@ interface CreateLiveEventInput {
   description?: string;
   category?: string;
   coverImage?: string;
+  startPoint?: string;
+  endPoint?: string;
+  gatherPoint?: string;
+  distance?: string;
+  motivation?: string;
 }
 
 interface CreateGroupInput {
@@ -208,6 +218,8 @@ export const useAppStore = create<AppState>()(
           date: input.date, time: input.time, endTime: input.endTime || '',
           venue: input.venue, venueAddress: '', description: input.description || '',
           summary: '', coverImage: input.coverImage || '', organizer: currentUserId, maxSlots: input.maxSlots || 12,
+          startPoint: input.startPoint || '', endPoint: input.endPoint || '', gatherPoint: input.gatherPoint || '',
+          distance: input.distance || '', motivation: input.motivation || '',
           weather: { condition: 'TBD', temp: 28, icon: '☀️', humidity: 60, wind: 10 },
           attendance: [{ userId: currentUserId, status: 'coming', updatedAt: now }],
           leagues: [], status: 'upcoming', isRecurring: input.isRecurring || false,
@@ -233,12 +245,14 @@ export const useAppStore = create<AppState>()(
         const end = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         const endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
         const cat = (input.category || 'badminton') as EventCategory;
-        const defaultTitle = cat === 'badminton' ? 'Live Match' : cat === 'movie' ? 'Movie Night' : cat === 'cafe' ? 'Cafe Session' : 'Roaming';
+        const defaultTitle = cat === 'badminton' ? 'Live Match' : cat === 'movie' ? 'Movie Night' : cat === 'cafe' ? 'Cafe Session' : cat === 'roaming' ? 'Roaming' : 'Cycle Ride';
         const newEvent: Event = {
           id: newId, title: input.title || defaultTitle + ' @ ' + input.venue,
           sport: 'badminton' as any, category: cat, groupId: input.groupId,
           date: today, time: nowTime, endTime, venue: input.venue,
           venueAddress: '', description: input.description || '', summary: '', coverImage: input.coverImage || '',
+          startPoint: input.startPoint || '', endPoint: input.endPoint || '', gatherPoint: input.gatherPoint || '',
+          distance: input.distance || '', motivation: input.motivation || '',
           organizer: currentUserId, maxSlots: 12,
           weather: { condition: 'TBD', temp: 28, icon: '☀️', humidity: 60, wind: 10 },
           attendance: [{ userId: currentUserId, status: 'coming', updatedAt: now.toISOString() }],

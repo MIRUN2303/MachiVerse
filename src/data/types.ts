@@ -8,7 +8,7 @@ export type SportType =
   | 'trekking' | 'swimming' | 'movie' | 'cafe' | 'roadtrip'
   | 'gaming' | 'boardgames' | 'custom';
 
-export type EventCategory = 'badminton' | 'movie' | 'cafe' | 'roaming';
+export type EventCategory = 'badminton' | 'movie' | 'cafe' | 'roaming' | 'cycling';
 
 export type AttendanceStatus = 'coming' | 'maybe' | 'not_coming' | 'late' | null;
 
@@ -113,6 +113,11 @@ export interface Event {
   announcements: Announcement[];
   gallery: string[];
   tags: string[];
+  startPoint?: string;
+  endPoint?: string;
+  gatherPoint?: string;
+  distance?: string;
+  motivation?: string;
   rankings?: TeamStanding[];
   mvps?: PlayerMVP[];
 }

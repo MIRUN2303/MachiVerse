@@ -224,6 +224,11 @@ export async function fetchEvents(): Promise<Event[]> {
       announcements: [],
       gallery: e.gallery || [],
       tags: e.tags || [],
+      startPoint: e.start_point || '',
+      endPoint: e.end_point || '',
+      gatherPoint: e.gather_point || '',
+      distance: e.distance || '',
+      motivation: e.motivation || '',
       rankings: e.rankings || [],
       mvps: e.mvps || [],
     };
@@ -277,6 +282,11 @@ export async function createEventInDb(event: Event): Promise<void> {
     recurring_pattern: event.recurringPattern || null,
     tags: event.tags,
     gallery: event.gallery,
+    start_point: event.startPoint || '',
+    end_point: event.endPoint || '',
+    gather_point: event.gatherPoint || '',
+    distance: event.distance || '',
+    motivation: event.motivation || '',
     rankings: event.rankings || [],
     mvps: event.mvps || [],
   });

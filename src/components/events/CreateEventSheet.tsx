@@ -10,6 +10,7 @@ const CATEGORIES: { value: EventCategory; label: string; emoji: string; desc: st
   { value: 'movie', label: 'Movie Out', emoji: '🎬', desc: 'Attendance & summary' },
   { value: 'cafe', label: 'Cafe Out', emoji: '☕', desc: 'Attendance & summary' },
   { value: 'roaming', label: 'Roaming', emoji: '🚶', desc: 'Attendance & summary' },
+  { value: 'cycling', label: 'Cycle Ride', emoji: '🚴', desc: 'Route, distance & summary' },
 ];
 
 const CATEGORY_MAP: Record<EventCategory, string> = {
@@ -17,6 +18,7 @@ const CATEGORY_MAP: Record<EventCategory, string> = {
   movie: '🎬',
   cafe: '☕',
   roaming: '🚶',
+  cycling: '🚴',
 };
 
 const CATEGORY_BANNERS: Record<EventCategory, string> = {
@@ -24,6 +26,7 @@ const CATEGORY_BANNERS: Record<EventCategory, string> = {
   movie: '/2.jpg',
   cafe: '/3.jpg',
   roaming: '/4.jpg',
+  cycling: '/5.jpg',
 };
 
 interface CreateEventSheetProps {
@@ -33,6 +36,58 @@ interface CreateEventSheetProps {
   preselectedDate?: string;
   initialMode?: 'schedule' | 'live';
 }
+
+const RouteFields: React.FC<{
+  startPoint: string; onStartChange: (v: string) => void;
+  endPoint: string; onEndChange: (v: string) => void;
+  gatherPoint: string; onGatherChange: (v: string) => void;
+  distance: string; onDistanceChange: (v: string) => void;
+  motivation: string; onMotivationChange: (v: string) => void;
+}> = ({ startPoint, onStartChange, endPoint, onEndChange, gatherPoint, onGatherChange, distance, onDistanceChange, motivation, onMotivationChange }) => (
+  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 overflow-hidden">
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>START POINT</label>
+        <input type="text" value={startPoint} onChange={e => onStartChange(e.target.value)}
+          placeholder="e.g. Marina Beach"
+          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }} />
+      </div>
+      <div>
+        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>END POINT</label>
+        <input type="text" value={endPoint} onChange={e => onEndChange(e.target.value)}
+          placeholder="e.g. Besant Nagar"
+          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }} />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>GATHER AT</label>
+        <input type="text" value={gatherPoint} onChange={e => onGatherChange(e.target.value)}
+          placeholder="e.g. Main Gate"
+          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }} />
+      </div>
+      <div>
+        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>DISTANCE</label>
+        <input type="text" value={distance} onChange={e => onDistanceChange(e.target.value)}
+          placeholder="e.g. 12 km"
+          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }} />
+      </div>
+    </div>
+    <div>
+      <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>MOTIVATION / TARGET</label>
+      <textarea value={motivation} onChange={e => onMotivationChange(e.target.value)}
+        placeholder="e.g. Let's conquer the coastal route together!"
+        maxLength={150} rows={2}
+        className="w-full rounded-2xl px-4 py-3 text-sm text-white resize-none outline-none"
+        style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }} />
+      <p className="text-right text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{motivation.length}/150</p>
+    </div>
+  </motion.div>
+);
 
 const CategoryDropdown: React.FC<{ value: EventCategory; onChange: (v: EventCategory) => void }> = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -124,6 +179,11 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   const [description, setDescription] = useState('');
 
   const [isRecurring, setIsRecurring] = useState(false);
+  const [startPoint, setStartPoint] = useState('');
+  const [endPoint, setEndPoint] = useState('');
+  const [gatherPoint, setGatherPoint] = useState('');
+  const [distance, setDistance] = useState('');
+  const [motivation, setMotivation] = useState('');
   const [step, setStep] = useState<'details' | 'schedule'>('details');
   const [loading, setLoading] = useState(false);
 
@@ -142,7 +202,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
     const effectiveTime = useCustomTime ? time : '00:00';
     const effectiveEnd = useCustomTime ? endTime : '24:00';
     const banner = CATEGORY_BANNERS[category];
-    const newId = createEvent({ groupId, title, category, sport: 'badminton', date, time: effectiveTime, endTime: effectiveEnd, venue, description, coverImage: banner, isRecurring });
+    const newId = createEvent({ groupId, title, category, sport: 'badminton', date, time: effectiveTime, endTime: effectiveEnd, venue, description, coverImage: banner, isRecurring, startPoint, endPoint, gatherPoint, distance, motivation });
     setLoading(false);
     onClose();
     if (newId) navigate(`/events/${newId}`);
@@ -153,7 +213,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
     setLoading(true);
     await new Promise(r => setTimeout(r, 400));
     const banner = CATEGORY_BANNERS[category];
-    const newId = createLiveEvent({ groupId, title, venue, description, coverImage: banner, category });
+    const newId = createLiveEvent({ groupId, title, venue, description, coverImage: banner, category, startPoint, endPoint, gatherPoint, distance, motivation });
     setLoading(false);
     onClose();
     if (newId) navigate(`/events/${newId}`);
@@ -166,6 +226,11 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
     setVenue('');
     setDescription('');
     setUseCustomTime(false);
+    setStartPoint('');
+    setEndPoint('');
+    setGatherPoint('');
+    setDistance('');
+    setMotivation('');
     onClose();
   };
 
@@ -270,7 +335,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           type="text"
                           value={title}
                           onChange={e => setTitle(e.target.value)}
-                          placeholder={category === 'movie' ? 'e.g. Oppenheimer at IMAX' : category === 'cafe' ? 'e.g. Weekend Coffee Run' : category === 'roaming' ? 'e.g. Evening Stroll' : 'e.g. Saturday Badminton Session'}
+                          placeholder={category === 'movie' ? 'e.g. Oppenheimer at IMAX' : category === 'cafe' ? 'e.g. Weekend Coffee Run' : category === 'roaming' ? 'e.g. Evening Stroll' : category === 'cycling' ? 'e.g. Morning Coastal Ride' : 'e.g. Saturday Badminton Session'}
                           className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none transition-all"
                           style={{
                             background: '#161616',
@@ -291,6 +356,16 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
                         />
                       </div>
+
+                      {category === 'cycling' && (
+                        <RouteFields
+                          startPoint={startPoint} onStartChange={setStartPoint}
+                          endPoint={endPoint} onEndChange={setEndPoint}
+                          gatherPoint={gatherPoint} onGatherChange={setGatherPoint}
+                          distance={distance} onDistanceChange={setDistance}
+                          motivation={motivation} onMotivationChange={setMotivation}
+                        />
+                      )}
 
                       <Button
                         variant="lime" fullWidth size="lg"
@@ -383,7 +458,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           type="text"
                           value={venue}
                           onChange={e => setVenue(e.target.value)}
-                          placeholder={category === 'movie' ? 'e.g. PVR Cinemas' : category === 'cafe' ? 'e.g. Starbucks Reserve' : category === 'roaming' ? 'e.g. Marine Drive' : 'e.g. Sportorium Court 2'}
+                          placeholder={category === 'movie' ? 'e.g. PVR Cinemas' : category === 'cafe' ? 'e.g. Starbucks Reserve' : category === 'roaming' ? 'e.g. Marine Drive' : category === 'cycling' ? 'e.g. ECR Beach Road' : 'e.g. Sportorium Court 2'}
                           className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
                           style={{
                             background: '#161616',
@@ -459,7 +534,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           type="text"
                           value={title}
                           onChange={e => setTitle(e.target.value)}
-                          placeholder={category === 'movie' ? 'e.g. Oppenheimer at IMAX' : category === 'cafe' ? 'e.g. Weekend Coffee Run' : category === 'roaming' ? 'e.g. Evening Stroll' : 'e.g. Saturday Badminton Session'}
+                          placeholder={category === 'movie' ? 'e.g. Oppenheimer at IMAX' : category === 'cafe' ? 'e.g. Weekend Coffee Run' : category === 'roaming' ? 'e.g. Evening Stroll' : category === 'cycling' ? 'e.g. Morning Coastal Ride' : 'e.g. Saturday Badminton Session'}
                           className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none transition-all"
                           style={{
                             background: '#161616',
@@ -475,7 +550,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           type="text"
                           value={venue}
                           onChange={e => setVenue(e.target.value)}
-                          placeholder={category === 'movie' ? 'e.g. PVR Cinemas' : category === 'cafe' ? 'e.g. Starbucks Reserve' : category === 'roaming' ? 'e.g. Marine Drive' : 'e.g. Sportorium Court 2'}
+                          placeholder={category === 'movie' ? 'e.g. PVR Cinemas' : category === 'cafe' ? 'e.g. Starbucks Reserve' : category === 'roaming' ? 'e.g. Marine Drive' : category === 'cycling' ? 'e.g. ECR Beach Road' : 'e.g. Sportorium Court 2'}
                           className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none"
                           style={{
                             background: '#161616',
@@ -495,6 +570,16 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                           style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
                         />
                       </div>
+
+                      {category === 'cycling' && (
+                        <RouteFields
+                          startPoint={startPoint} onStartChange={setStartPoint}
+                          endPoint={endPoint} onEndChange={setEndPoint}
+                          gatherPoint={gatherPoint} onGatherChange={setGatherPoint}
+                          distance={distance} onDistanceChange={setDistance}
+                          motivation={motivation} onMotivationChange={setMotivation}
+                        />
+                      )}
 
                       <Button
                         variant="lime" fullWidth size="lg"

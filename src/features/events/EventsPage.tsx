@@ -352,6 +352,48 @@ export const EventDetailPage: React.FC = () => {
           </FadeUp>
         )}
 
+        {/* ROUTE INFO (for cycling events) */}
+        {event.category === 'cycling' && (event.status === 'live' || event.status === 'completed') && (
+          <FadeUp delay={0.1}>
+            <SectionHeader title="🚴 Route" className="mb-3" />
+            <Card padding="md" variant="dark">
+              <div className="grid grid-cols-2 gap-3">
+                {event.startPoint && (
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <p className="text-[10px] font-bold mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>START</p>
+                    <p className="text-sm font-bold text-white">{event.startPoint}</p>
+                  </div>
+                )}
+                {event.endPoint && (
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <p className="text-[10px] font-bold mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>END</p>
+                    <p className="text-sm font-bold text-white">{event.endPoint}</p>
+                  </div>
+                )}
+              </div>
+              {event.gatherPoint && (
+                <div className="rounded-xl p-3 mt-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <p className="text-[10px] font-bold mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>GATHER AT</p>
+                  <p className="text-sm font-bold text-white">{event.gatherPoint}</p>
+                </div>
+              )}
+              {(event.distance || event.motivation) && (
+                <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {event.distance && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,255,65,0.08)' }}>
+                      <span className="text-xs">📏</span>
+                      <span className="text-xs font-bold text-[#00ff41]">{event.distance}</span>
+                    </div>
+                  )}
+                  {event.motivation && (
+                    <p className="text-xs flex-1" style={{ color: 'rgba(255,255,255,0.5)' }}>💪 {event.motivation}</p>
+                  )}
+                </div>
+              )}
+            </Card>
+          </FadeUp>
+        )}
+
         {/* SUMMARY (for non-badminton events) */}
         {event.category !== 'badminton' && (event.status === 'live' || event.status === 'completed') && (
           <FadeUp delay={0.15}>
@@ -822,7 +864,13 @@ export const EventsPage: React.FC = () => {
   const filtered = events
     .filter(e => myGroupIds.includes(e.groupId))
     .filter(e => filter === 'all' || (filter === 'active' ? (e.status === 'upcoming' || e.status === 'live' || e.status === 'paused') : e.status === filter))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => {
+      if (a.status === 'live' && b.status !== 'live') return -1;
+      if (b.status === 'live' && a.status !== 'live') return 1;
+      const aDt = `${a.date}T${a.time || '00:00'}`;
+      const bDt = `${b.date}T${b.time || '00:00'}`;
+      return aDt.localeCompare(bDt);
+    });
 
   return (
     <div className="pb-24 max-w-lg mx-auto px-4 pt-4 space-y-4">
@@ -883,6 +931,9 @@ export const EventsPage: React.FC = () => {
                       {format(parseISO(event.date), 'EEE, MMM d')} · {event.time}
                     </p>
                     <p className="text-white/50 text-xs">📍 {event.venue}</p>
+                    {event.category === 'cycling' && event.distance && (
+                      <p className="text-[#00ff41]/60 text-xs mt-0.5">🚴 {event.distance}</p>
+                    )}
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex -space-x-1.5">
                         {event.attendance.filter(a => a.status === 'coming').slice(0, 3).map(a => {
