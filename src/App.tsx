@@ -6,7 +6,7 @@ import { useAppStore } from './store/useAppStore';
 
 import { BottomNav, AppHeader } from './components/layout/Navigation';
 import { HomePage } from './features/home/HomePage';
-import { EventDetailPage } from './features/events/EventsPage';
+import { EventDetailPage, EventsPage } from './features/events/EventsPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { GroupsPage, GroupDetailPage } from './features/groups/GroupsPage';
@@ -61,6 +61,7 @@ const AppContent: React.FC = () => {
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<IntroPage />} />
               <Route path="/home" element={<PageWrapper><HomePage /></PageWrapper>} />
+              <Route path="/events" element={<PageWrapper><EventsPage /></PageWrapper>} />
               <Route path="/events/:id" element={<PageWrapper><EventDetailPage /></PageWrapper>} />
               <Route path="/calendar" element={<PageWrapper><CalendarPage /></PageWrapper>} />
               <Route path="/profile" element={<PageWrapper><ProfilePage /></PageWrapper>} />
