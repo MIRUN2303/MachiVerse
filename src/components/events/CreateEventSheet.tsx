@@ -34,6 +34,72 @@ interface CreateEventSheetProps {
   initialMode?: 'schedule' | 'live';
 }
 
+const CategoryDropdown: React.FC<{ value: EventCategory; onChange: (v: EventCategory) => void }> = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const selected = CATEGORIES.find(c => c.value === value)!;
+
+  return (
+    <div className="relative">
+      <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>CATEGORY</label>
+      <motion.button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+        style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <span className="text-xl">{selected.emoji}</span>
+        <div className="flex-1 text-left">
+          <p className="text-sm font-bold">{selected.label}</p>
+          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{selected.desc}</p>
+        </div>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}
+        >▾</motion.span>
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden rounded-2xl mt-1"
+            style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {CATEGORIES.map(c => {
+              const isSelected = c.value === value;
+              return (
+                <motion.button
+                  key={c.value}
+                  type="button"
+                  onClick={() => { onChange(c.value); setOpen(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all"
+                  style={isSelected
+                    ? { background: 'rgba(0,255,65,0.08)', color: '#00ff41' }
+                    : { background: 'transparent', color: 'rgba(255,255,255,0.6)' }
+                  }
+                  whileHover={{ background: isSelected ? 'rgba(0,255,65,0.12)' : 'rgba(255,255,255,0.05)' }}
+                >
+                  <span className="text-lg">{c.emoji}</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold">{c.label}</p>
+                    <p className="text-[10px]" style={{ color: isSelected ? 'rgba(0,255,65,0.4)' : 'rgba(255,255,255,0.3)' }}>{c.desc}</p>
+                  </div>
+                  {isSelected && <span className="text-xs" style={{ color: '#00ff41' }}>✓</span>}
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   isOpen, onClose, preselectedGroupId, preselectedDate, initialMode = 'schedule',
 }) => {
@@ -196,28 +262,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                         </div>
                       )}
 
-                      <div>
-                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>CATEGORY</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {CATEGORIES.map(c => (
-                            <motion.button key={c.value}
-                              onClick={() => setCategory(c.value)}
-                              className="flex items-center gap-2 px-3 py-3 rounded-2xl text-sm font-semibold transition-all border"
-                              style={category === c.value
-                                ? { background: 'rgba(0,255,65,0.1)', borderColor: '#00ff41', color: '#00ff41' }
-                                : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
-                              }
-                              whileTap={{ scale: 0.97 }}
-                            >
-                              <span className="text-xl">{c.emoji}</span>
-                              <div className="text-left">
-                                <p className="text-xs font-bold">{c.label}</p>
-                                <p className="text-[10px] opacity-60">{c.desc}</p>
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
+                      <CategoryDropdown value={category} onChange={setCategory} />
 
                       <div>
                         <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>EVENT TITLE *</label>
@@ -406,28 +451,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                         </div>
                       )}
 
-                      <div>
-                        <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>CATEGORY</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {CATEGORIES.map(c => (
-                            <motion.button key={c.value}
-                              onClick={() => setCategory(c.value)}
-                              className="flex items-center gap-2 px-3 py-3 rounded-2xl text-sm font-semibold transition-all border"
-                              style={category === c.value
-                                ? { background: 'rgba(0,255,65,0.1)', borderColor: '#00ff41', color: '#00ff41' }
-                                : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
-                              }
-                              whileTap={{ scale: 0.97 }}
-                            >
-                              <span className="text-xl">{c.emoji}</span>
-                              <div className="text-left">
-                                <p className="text-xs font-bold">{c.label}</p>
-                                <p className="text-[10px] opacity-60">{c.desc}</p>
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
+                      <CategoryDropdown value={category} onChange={setCategory} />
 
                       <div>
                         <label className="block text-xs font-bold mb-2" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>EVENT TITLE *</label>
