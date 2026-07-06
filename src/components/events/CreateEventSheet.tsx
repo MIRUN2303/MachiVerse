@@ -290,14 +290,14 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                         </motion.button>
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 pt-2 pb-4 sticky bottom-0" style={{ background: '#0f0f0f' }}>
                         <Button variant="ghost" size="lg" className="flex-1" onClick={() => setStep('details')}>← Back</Button>
                         <Button
                           variant="lime" size="lg" className="flex-2 flex-1"
                           disabled={!canSubmit} loading={loading}
                           onClick={handleCreate}
                         >
-                          Create Event 🚀
+                          ✓ Confirm & Create
                         </Button>
                       </div>
                     </motion.div>
