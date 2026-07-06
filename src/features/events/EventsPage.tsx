@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { useAppStore } from '../../store/useAppStore';
 import { SPORT_CONFIG, getUserById, getGroupById } from '../../data/mockData';
@@ -43,6 +43,22 @@ export const EventDetailPage: React.FC = () => {
   const [matchForm, setMatchForm] = useState<{ leagueId: string; side1: string[]; side2: string[]; score1: string; score2: string; name: string; isFinal: boolean } | null>(null);
   const [showEditDetails, setShowEditDetails] = useState(false);
   const [editFields, setEditFields] = useState({ title: '', date: '', time: '', endTime: '', venue: '', description: '' });
+  const [confirmAction, setConfirmAction] = useState<{ label: string; onConfirm: () => void } | null>(null);
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaWord, setCaptchaWord] = useState('');
+
+  const generateCaptcha = useCallback(() => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let word = '';
+    for (let i = 0; i < 5; i++) word += chars[Math.floor(Math.random() * chars.length)];
+    setCaptchaWord(word);
+    setCaptchaInput('');
+  }, []);
+
+  const promptConfirm = (label: string, onConfirm: () => void) => {
+    generateCaptcha();
+    setConfirmAction({ label, onConfirm });
+  };
 
   const event = events.find(e => e.id === id);
   const groups = useAppStore(s => s.groups);
@@ -228,18 +244,18 @@ export const EventDetailPage: React.FC = () => {
               <div className="flex gap-2 flex-wrap">
                 {event.status === 'upcoming' && (
                   <Button variant="lime" size="sm" className="flex-1"
-                    onClick={() => { useAppStore.getState().startEvent(event.id); }}>
+                    onClick={() => promptConfirm('Start Now', () => { useAppStore.getState().startEvent(event.id); })}>
                     Start Now
                   </Button>
                 )}
                 {event.status === 'live' && (
                   <>
                     <Button variant="ghost" size="sm" className="flex-1"
-                      onClick={() => pauseEvent(event.id)}>
+                      onClick={() => promptConfirm('Pause & Save', () => pauseEvent(event.id))}>
                       Pause & Save
                     </Button>
                     <Button variant="amber" size="sm" className="flex-1"
-                      onClick={() => { useAppStore.getState().completeEvent(event.id); }}>
+                      onClick={() => promptConfirm('End & Save', () => { useAppStore.getState().completeEvent(event.id); })}>
                       End & Save
                     </Button>
                   </>
@@ -247,11 +263,11 @@ export const EventDetailPage: React.FC = () => {
                 {event.status === 'paused' && (
                   <>
                     <Button variant="lime" size="sm" className="flex-1"
-                      onClick={() => resumeEvent(event.id)}>
+                      onClick={() => promptConfirm('Resume', () => resumeEvent(event.id))}>
                       Resume
                     </Button>
                     <Button variant="amber" size="sm" className="flex-1"
-                      onClick={() => { useAppStore.getState().completeEvent(event.id); }}>
+                      onClick={() => promptConfirm('End & Save', () => { useAppStore.getState().completeEvent(event.id); })}>
                       End & Save
                     </Button>
                   </>
@@ -668,6 +684,74 @@ export const EventDetailPage: React.FC = () => {
             onClose={() => setGalleryIdx(null)}
           />
         )}
+
+        {/* Confirm action modal */}
+        <AnimatePresence>
+          {confirmAction && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+              style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => { setConfirmAction(null); setCaptchaInput(''); }}
+            >
+              <motion.div
+                className="w-full max-w-sm rounded-[2.5rem] p-6"
+                style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.08)' }}
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+              >
+                <p className="font-display font-bold text-white text-lg mb-1">Confirm {confirmAction.label}</p>
+                <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  Type the word below to confirm
+                </p>
+
+                <div className="text-center mb-4">
+                  <span className="inline-block px-6 py-3 rounded-2xl text-2xl font-black tracking-[0.3em] select-none"
+                    style={{ background: '#00ff41', color: '#000', letterSpacing: '0.3em' }}>
+                    {captchaWord.split('').join(' ')}
+                  </span>
+                </div>
+
+                <input
+                  type="text"
+                  value={captchaInput}
+                  onChange={e => setCaptchaInput(e.target.value.toUpperCase())}
+                  placeholder="Type the word above"
+                  autoFocus
+                  className="w-full rounded-2xl px-4 py-3.5 text-white text-sm font-medium outline-none mb-4 text-center tracking-[0.2em] uppercase"
+                  style={{
+                    background: '#161616',
+                    border: captchaInput.length > 0 && captchaInput !== captchaWord ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.08)',
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && captchaInput === captchaWord) {
+                      confirmAction.onConfirm();
+                      setConfirmAction(null);
+                      setCaptchaInput('');
+                    }
+                  }}
+                />
+
+                <div className="flex gap-3">
+                  <Button variant="ghost" size="lg" className="flex-1" onClick={() => { setConfirmAction(null); setCaptchaInput(''); }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="lime" size="lg" className="flex-1"
+                    disabled={captchaInput !== captchaWord}
+                    onClick={() => {
+                      confirmAction.onConfirm();
+                      setConfirmAction(null);
+                      setCaptchaInput('');
+                    }}
+                  >
+                    ✓ Confirm
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
