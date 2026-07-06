@@ -109,6 +109,23 @@ export interface Event {
   announcements: Announcement[];
   gallery: string[];
   tags: string[];
+  rankings?: TeamStanding[];
+  mvps?: PlayerMVP[];
+}
+
+export interface TeamStanding {
+  teamId: string;
+  teamName: string;
+  playerIds: string[];
+  wins: number;
+  matchesPlayed: number;
+}
+
+export interface PlayerMVP {
+  userId: string;
+  playerName: string;
+  wins: number;
+  matchesPlayed: number;
 }
 
 export interface WeatherInfo {
@@ -144,6 +161,8 @@ export interface Team {
 
 export interface Match {
   id: string;
+  name?: string;
+  isFinal?: boolean;
   team1Id: string;
   team2Id: string;
   score1: number;

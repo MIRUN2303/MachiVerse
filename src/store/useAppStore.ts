@@ -19,6 +19,8 @@ interface CreateMatchInput {
   side2PlayerIds: string[];
   score1: number;
   score2: number;
+  name?: string;
+  isFinal?: boolean;
 }
 
 interface CreateEventInput {
@@ -363,6 +365,8 @@ export const useAppStore = create<AppState>()(
                     matches: [...l.matches, {
                       id: newMid,
                       leagueId: input.leagueId,
+                      name: input.name || '',
+                      isFinal: input.isFinal || false,
                       team1Id,
                       team2Id,
                       score1: input.score1,
@@ -405,10 +409,58 @@ export const useAppStore = create<AppState>()(
       },
 
       completeEvent: (eventId) => {
+        const event = get().events.find(e => e.id === eventId);
+        if (!event || event.status !== 'live') return;
+
+        const teamWins: Record<string, { wins: number; matches: number }> = {};
+        const playerWins: Record<string, { wins: number; matches: number }> = {};
+
+        for (const league of event.leagues) {
+          for (const match of league.matches) {
+            if (!match.winnerId) continue;
+            const t1 = league.teams.find(t => t.id === match.team1Id);
+            const t2 = league.teams.find(t => t.id === match.team2Id);
+            if (!t1 || !t2) continue;
+
+            const key1 = t1.id; const key2 = t2.id;
+            if (!teamWins[key1]) teamWins[key1] = { wins: 0, matches: 0 };
+            if (!teamWins[key2]) teamWins[key2] = { wins: 0, matches: 0 };
+            teamWins[key1].matches++; teamWins[key2].matches++;
+            if (match.winnerId === key1) teamWins[key1].wins++;
+            if (match.winnerId === key2) teamWins[key2].wins++;
+
+            for (const pid of t1.playerIds) {
+              if (!playerWins[pid]) playerWins[pid] = { wins: 0, matches: 0 };
+              playerWins[pid].matches++;
+              if (match.winnerId === key1) playerWins[pid].wins++;
+            }
+            for (const pid of t2.playerIds) {
+              if (!playerWins[pid]) playerWins[pid] = { wins: 0, matches: 0 };
+              playerWins[pid].matches++;
+              if (match.winnerId === key2) playerWins[pid].wins++;
+            }
+          }
+        }
+
+        const rankings: any[] = Object.entries(teamWins)
+          .map(([teamId, d]) => {
+            const t = event.leagues.flatMap(l => l.teams).find(t => t.id === teamId);
+            return { teamId, teamName: t?.name || '?', playerIds: t?.playerIds || [], wins: d.wins, matchesPlayed: d.matches };
+          })
+          .sort((a, b) => b.wins - a.wins || b.matchesPlayed - a.matchesPlayed);
+
+        const mvps: any[] = Object.entries(playerWins)
+          .map(([userId, d]) => {
+            const u = getUserById(userId);
+            return { userId, playerName: u?.name.split(' ')[0] || userId, wins: d.wins, matchesPlayed: d.matches };
+          })
+          .sort((a, b) => b.wins - a.wins || b.matchesPlayed - a.matchesPlayed)
+          .slice(0, 3);
+
         set(state => ({
           events: state.events.map(e =>
             e.id === eventId && e.status === 'live'
-              ? { ...e, status: 'completed' as const }
+              ? { ...e, status: 'completed' as const, rankings, mvps }
               : e
           ),
         }));

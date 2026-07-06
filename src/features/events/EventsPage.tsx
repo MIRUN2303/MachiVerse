@@ -38,7 +38,7 @@ export const EventDetailPage: React.FC = () => {
   const [leagueName, setLeagueName] = useState('');
   const [leagueFormat, setLeagueFormat] = useState<'single' | 'doubles'>('doubles');
   const [editingScore, setEditingScore] = useState<{ leagueId: string; matchId: string; s1: string; s2: string } | null>(null);
-  const [matchForm, setMatchForm] = useState<{ leagueId: string; side1: string[]; side2: string[]; score1: string; score2: string } | null>(null);
+  const [matchForm, setMatchForm] = useState<{ leagueId: string; side1: string[]; side2: string[]; score1: string; score2: string; name: string; isFinal: boolean } | null>(null);
   const [showEditDetails, setShowEditDetails] = useState(false);
   const [editFields, setEditFields] = useState({ title: '', date: '', time: '', endTime: '', venue: '', description: '' });
 
@@ -165,12 +165,17 @@ export const EventDetailPage: React.FC = () => {
             {ATTENDANCE_OPTIONS.map(opt => (
               <motion.button
                 key={opt.status}
-                onClick={() => currentUserId && updateAttendance(event.id, currentUserId, opt.status)}
+                onClick={() => { if (event.status === 'completed') return; currentUserId && updateAttendance(event.id, currentUserId, opt.status); }}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
+                  event.status === 'completed'
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                } ${
                   myAttendance?.status === opt.status
                     ? 'text-white'
                     : 'glass border-white/20 text-white/60 hover:text-white'
                 }`}
+                disabled={event.status === 'completed'}
                 style={myAttendance?.status === opt.status ? {
                   background: `${opt.color}25`,
                   borderColor: opt.color,
@@ -316,9 +321,52 @@ export const EventDetailPage: React.FC = () => {
           </FadeUp>
         )}
 
-        {/* LEAGUES / SCORES — only visible when live */}
-        {event.status === 'live' && (
+        {/* LEAGUES / SCORES */}
+        {(event.status === 'live' || event.status === 'completed') && (
         <FadeUp delay={0.15}>
+          {/* COMPLETED SUMMARY */}
+          {event.status === 'completed' && event.rankings && (
+            <div className="space-y-3 mb-4">
+              <SectionHeader title="🏆 Event Results" className="mb-3" />
+              {/* Best Team */}
+              <Card padding="md" variant="dark">
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Best Team</p>
+                {event.rankings.length > 0 && (
+                  <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.3)' }}>
+                    <p className="text-lg mb-1">🥇</p>
+                    <p className="font-display font-bold text-white text-lg">{event.rankings[0].teamName}</p>
+                    <p className="text-white/50 text-xs mt-1">{event.rankings[0].wins} win{event.rankings[0].wins !== 1 ? 's' : ''} · {event.rankings[0].matchesPlayed} match{event.rankings[0].matchesPlayed !== 1 ? 'es' : ''}</p>
+                  </div>
+                )}
+                {event.rankings.length > 1 && (
+                  <div className="mt-2 space-y-1">
+                    {event.rankings.slice(1).map((r, i) => (
+                      <div key={r.teamId} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <span className="text-xs text-white/60">{i === 0 ? '🥈' : i === 1 ? '🥉' : `#${i+2}`} {r.teamName}</span>
+                        <span className="text-xs text-white/40">{r.wins} win{r.wins !== 1 ? 's' : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+              {/* MVP */}
+              {event.mvps && event.mvps.length > 0 && (
+                <Card padding="md" variant="dark">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">MVP — Top Players</p>
+                  <div className="space-y-1.5">
+                    {event.mvps.map((m, i) => (
+                      <div key={m.userId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <span className="text-sm">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                        <Avatar src={getUserById(m.userId)?.avatar} name={m.playerName} size="xs" />
+                        <span className="flex-1 text-sm font-bold text-white">{m.playerName}</span>
+                        <span className="text-xs text-white/50">{m.wins} win{m.wins !== 1 ? 's' : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
           <SectionHeader title="Leagues & Scores" className="mb-3" />
           {event.leagues.length === 0 ? (
             <Card padding="md" variant="dark">
@@ -393,8 +441,15 @@ export const EventDetailPage: React.FC = () => {
                       const isWin1 = match.winnerId === t1?.id;
                       const isWin2 = match.winnerId === t2?.id;
                       const isEditing = editingScore?.matchId === match.id;
+                      const isLocked = event.status === 'completed';
                       return (
                         <div key={match.id} className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                          {(match.name || match.isFinal) && (
+                            <div className="flex items-center justify-center gap-1.5 mb-2">
+                              {match.isFinal && <span className="text-[11px]">🏆</span>}
+                              <span className="text-[11px] font-bold text-white/50 text-center">{match.name || 'Final'}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 mb-1">
                             <span className="flex-1 text-xs font-bold text-white/40 text-right">Side 1</span>
                             <span className="w-16 text-center" />
@@ -402,7 +457,7 @@ export const EventDetailPage: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`flex-1 text-sm font-bold text-right ${isWin1 ? 'text-green-400' : 'text-white/70'}`}>{p1}</span>
-                            {isEditing ? (
+                            {isEditing && !isLocked ? (
                               <div className="flex items-center gap-1">
                                 <input type="number" min="0" value={editingScore!.s1} onChange={e => setEditingScore(s => s ? { ...s, s1: e.target.value } : null)}
                                   className="w-12 text-center bg-white/5 border border-white/10 rounded-lg px-1 py-1 text-white font-bold text-base outline-none focus:border-[#00ff41]" />
@@ -420,10 +475,10 @@ export const EventDetailPage: React.FC = () => {
                                 <button onClick={() => setEditingScore(null)} className="text-[10px] text-white/40 hover:underline ml-0.5">x</button>
                               </div>
                             ) : (
-                              <button onClick={() => canScore ? setEditingScore({ leagueId: league.id, matchId: match.id, s1: String(match.score1), s2: String(match.score2) }) : undefined}
-                                className={`font-display font-bold text-base px-2 ${canScore ? 'cursor-pointer hover:text-[#00ff41] transition-colors' : ''} ${match.winnerId ? 'text-white' : 'text-white/50'}`}>
+                              <span onClick={() => { if (!isLocked && canScore) setEditingScore({ leagueId: league.id, matchId: match.id, s1: String(match.score1), s2: String(match.score2) }); }}
+                                className={`font-display font-bold text-base px-2 ${!isLocked && canScore ? 'cursor-pointer hover:text-[#00ff41] transition-colors' : ''} ${match.winnerId ? 'text-white' : 'text-white/50'}`}>
                                 {match.score1}/{match.score2}
-                              </button>
+                              </span>
                             )}
                             <span className={`flex-1 text-sm font-bold ${isWin2 ? 'text-green-400' : 'text-white/70'}`}>{p2}</span>
                           </div>
@@ -431,7 +486,7 @@ export const EventDetailPage: React.FC = () => {
                           {isWin2 && <p className="text-center text-green-400/60 text-[10px] mt-0.5">{p2} win</p>}
                           {isEventAdmin && (event.status === 'live' || event.status === 'paused') && (
                             <button onClick={() => deleteMatch(event.id, league.id, match.id)}
-                              className="text-[9px] text-red-400/40 hover:text-red-400 transition-colors mt-1">Remove Match</button>
+                              className="text-[9px] text-red-400/40 hover:text-red-400 transition-colors mt-1 block mx-auto">Remove Match</button>
                           )}
                         </div>
                       );
@@ -448,6 +503,20 @@ export const EventDetailPage: React.FC = () => {
                     <div className="mt-3">
                       {isFormOpen ? (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 overflow-hidden">
+                          {/* Match Name */}
+                          <div>
+                            <p className="text-xs font-bold text-white/50 mb-1.5">Match Name (optional)</p>
+                            <input type="text" placeholder="e.g. Semi Final 1"
+                              value={matchForm!.name} onChange={e => setMatchForm(m => m ? { ...m, name: e.target.value } : m)}
+                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[#00ff41]" />
+                          </div>
+                          {/* Final Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={matchForm!.isFinal}
+                              onChange={e => setMatchForm(m => m ? { ...m, isFinal: e.target.checked } : m)}
+                              className="accent-[#00ff41] w-4 h-4" />
+                            <span className="text-xs font-bold text-white/50">This is the Final Match</span>
+                          </label>
                           {/* Side 1 */}
                           <div>
                             <p className="text-xs font-bold text-white/50 mb-1.5">Side 1 {maxPerSide > 1 ? `(pick ${maxPerSide})` : ''}</p>
@@ -518,6 +587,8 @@ export const EventDetailPage: React.FC = () => {
                               onClick={() => {
                                 addMatch({
                                   leagueId: league.id,
+                                  name: matchForm!.name || undefined,
+                                  isFinal: matchForm!.isFinal || undefined,
                                   side1PlayerIds: matchForm!.side1,
                                   side2PlayerIds: matchForm!.side2,
                                   score1: parseInt(matchForm!.score1) || 0,
@@ -531,7 +602,7 @@ export const EventDetailPage: React.FC = () => {
                         </motion.div>
                       ) : (
                         <Button variant="glass" size="sm" className="w-full"
-                          onClick={() => setMatchForm({ leagueId: league.id, side1: [], side2: [], score1: '', score2: '' })}>
+                          onClick={() => setMatchForm({ leagueId: league.id, side1: [], side2: [], score1: '', score2: '', name: '', isFinal: false })}>
                           + Add Match
                         </Button>
                       )}
@@ -551,7 +622,7 @@ export const EventDetailPage: React.FC = () => {
             action={
               <div className="flex items-center gap-2">
                 <span className="text-xs text-white/30">{event.gallery.length}/10</span>
-                {event.gallery.length < 10 && (
+                {event.gallery.length < 10 && event.status !== 'completed' && (
                   <Button variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>+ Add</Button>
                 )}
               </div>
