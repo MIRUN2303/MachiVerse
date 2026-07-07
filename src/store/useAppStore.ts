@@ -204,10 +204,8 @@ export const useAppStore = create<AppState>()(
             data.user.email,
             data.user.user_metadata?.name,
           );
-          if (resolved) {
-            const users = await db.fetchUsers().catch(() => get().users);
-            set({ isLoggedIn: true, currentUserId: resolved.id, users });
-          }
+          const users = await db.fetchUsers().catch(() => get().users);
+          set({ isLoggedIn: true, currentUserId: resolved.id, users });
           return true;
         } catch {
           toast.error('Invalid credentials');
@@ -227,10 +225,8 @@ export const useAppStore = create<AppState>()(
             name,
             phone,
           );
-          if (resolved) {
-            const users = await db.fetchUsers().catch(() => get().users);
-            set({ isLoggedIn: true, currentUserId: resolved.id, users });
-          }
+          const users = await db.fetchUsers().catch(() => get().users);
+          set({ isLoggedIn: true, currentUserId: resolved.id, users });
           return true;
         } catch (e: any) {
           toast.error(e.message || 'Sign up failed');

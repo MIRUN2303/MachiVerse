@@ -78,7 +78,7 @@ const AppContent: React.FC = () => {
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
 
   useEffect(() => {
-    if (!loaded) loadFromSupabase();
+    loadFromSupabase();
     connectionManager.startPolling(60000);
     const unsub = auth.onAuthStateChange(() => {
       loadFromSupabase();
@@ -87,7 +87,7 @@ const AppContent: React.FC = () => {
       connectionManager.stopPolling();
       unsub.data.subscription.unsubscribe();
     };
-  }, [loaded, loadFromSupabase]);
+  }, [loadFromSupabase]);
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/complete-profile';
 
