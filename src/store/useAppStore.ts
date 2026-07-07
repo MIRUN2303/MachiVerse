@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory } from '../data/types';
-import { getUserById, generateId } from '../data/mockData';
+import { getUserById } from '../data/mockData';
 import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
@@ -828,5 +828,4 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-// Required for mock login backward compat
-import { getUserByEmail, getUserByPhone, setCurrentUserId } from '../data/mockData';
+

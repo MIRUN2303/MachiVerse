@@ -8,7 +8,7 @@ import { Iconic } from '../../components/ui/icons';
 
 const formItem = {
   initial: { opacity: 0, y: 16 },
-  animate: (i: number) => ({ opacity: 1, y: 0, transition: { delay: 0.06 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] } }),
+  animate: (i: number) => ({ opacity: 1, y: 0, transition: { delay: 0.06 * i, duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } }),
 };
 
 export const SignupPage: React.FC = () => {
@@ -46,13 +46,13 @@ export const SignupPage: React.FC = () => {
         <div className="absolute bottom-[-80px] right-[-40px] w-[300px] h-[300px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, rgba(var(--amber-rgb),0.05), transparent)' }} />
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-sm relative z-10">
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }} className="w-full max-w-sm relative z-10">
         <div className="text-center mb-6">
           <motion.button onClick={() => navigate('/login')}
             className="text-white/30 text-sm mb-4 block hover:text-white/50 transition-colors"
             whileHover={{ x: -3 }}
           >← Back to Sign in</motion.button>
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' as const, stiffness: 300, damping: 20, delay: 0.1 }}>
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(var(--green-rgb),0.1)', border: '1px solid rgba(var(--green-rgb),0.2)' }}>
               <Iconic name="badminton" size={32} />
             </div>

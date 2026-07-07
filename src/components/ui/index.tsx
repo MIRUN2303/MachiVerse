@@ -6,7 +6,7 @@ import { ICON_MAP } from './icons';
 // BUTTON
 // =============================================
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'green' | 'amber' | 'ghost' | 'glass' | 'danger' | 'dark';
+  variant?: 'green' | 'amber' | 'lime' | 'ghost' | 'glass' | 'danger' | 'dark';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   iconRight?: React.ReactNode;
@@ -23,6 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   const variants: Record<string, string> = {
     green: 'btn-green text-black',
     amber: 'btn-amber text-black',
+    lime: 'btn-lime text-black',
     ghost: 'btn-ghost',
     glass: 'glass text-white/70 hover:text-white',
     danger: 'bg-[var(--red)] text-white hover:brightness-110',
@@ -120,7 +121,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', online, 
 // =============================================
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'green' | 'amber' | 'gold' | 'emerald' | 'red' | 'blue' | 'glass' | 'dark';
+  variant?: 'green' | 'amber' | 'lime' | 'gold' | 'emerald' | 'red' | 'blue' | 'glass' | 'dark';
   size?: 'sm' | 'md'; dot?: boolean; className?: string;
 }
 
@@ -128,6 +129,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'green', size 
   const variants: Record<string, string> = {
     green: 'bg-[rgba(var(--green-rgb),0.12)] text-[var(--green)] border border-[rgba(var(--green-rgb),0.25)]',
     amber: 'bg-[rgba(var(--amber-rgb),0.12)] text-[var(--amber)] border border-[rgba(var(--amber-rgb),0.25)]',
+    lime: 'bg-[rgba(var(--green-rgb),0.12)] text-[var(--green)] border border-[rgba(var(--green-rgb),0.25)]',
     gold: 'bg-[rgba(var(--gold-rgb),0.12)] text-amber-300 border border-[rgba(var(--gold-rgb),0.25)]',
     emerald: 'bg-[rgba(var(--green-rgb),0.12)] text-emerald-300 border border-[rgba(var(--green-rgb),0.25)]',
     red: 'bg-[rgba(var(--red-rgb),0.12)] text-red-300 border border-[rgba(var(--red-rgb),0.25)]',

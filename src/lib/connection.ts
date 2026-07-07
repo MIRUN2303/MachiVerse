@@ -1,4 +1,4 @@
-import { supabase, checkConnection } from './supabase';
+import { checkConnection } from './supabase';
 import toast from 'react-hot-toast';
 
 type ConnectionListener = (connected: boolean) => void;

@@ -24,7 +24,7 @@ const pageVariants = {
   animate: {
     opacity: 1, y: 0, scale: 1, filter: 'blur(0px)',
     transition: {
-      type: 'spring',
+      type: 'spring' as const,
       stiffness: 180,
       damping: 22,
       mass: 0.8,
