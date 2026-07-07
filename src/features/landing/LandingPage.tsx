@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
-import { SPORT_CONFIG } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
 
 const FEATURES = [
   { icon: '🏸', title: 'Weekend Sports', desc: 'Organize badminton, cricket, football and 10+ sports with your crew' },

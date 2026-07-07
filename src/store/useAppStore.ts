@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory } from '../data/types';
-import { getUserById, setCurrentUserId, USERS } from '../data/mockData';
+
 import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
@@ -210,14 +210,6 @@ export const useAppStore = create<AppState>()(
           }
           return true;
         } catch {
-          // Fallback: try mock users for dev
-          const user = USERS.find((u: any) => u.email === emailOrPhone && u.password === password);
-          if (user) {
-            setCurrentUserId(user.id);
-            const users = await db.fetchUsers().catch(() => get().users);
-            set({ isLoggedIn: true, currentUserId: user.id, users });
-            return true;
-          }
           toast.error('Invalid credentials');
           return false;
         }
@@ -252,7 +244,6 @@ export const useAppStore = create<AppState>()(
         } catch (e: any) {
           console.warn('Sign out error', e);
         }
-        setCurrentUserId(null);
         set({ isLoggedIn: false, currentUserId: null, needsPhone: false, users: [] });
       },
 
@@ -475,7 +466,7 @@ export const useAppStore = create<AppState>()(
         const users = get().users;
         const mvps: any[] = Object.entries(playerWins)
           .map(([userId, d]) => {
-            const u = users.find((u: any) => u.id === userId) || getUserById(userId);
+            const u = users.find((u: any) => u.id === userId);
             return { userId, playerName: u?.name?.split(' ')[0] || userId, wins: d.wins, matchesPlayed: d.matches };
           })
           .sort((a, b) => b.wins - a.wins || b.matchesPlayed - a.matchesPlayed)
@@ -571,7 +562,7 @@ export const useAppStore = create<AppState>()(
       getMyGroupsNextEvents: () => {
         const state = get();
         const today = new Date().toISOString().split('T')[0];
-        const user = state.users.find((u: any) => u.id === state.currentUserId) || getUserById(state.currentUserId || '');
+        const user = state.users.find((u: any) => u.id === state.currentUserId);
         const myGroupIds = user ? [...(user.createdGroups || []), ...(user.joinedGroups || [])] : [];
 
         return myGroupIds.map(groupId => {
@@ -613,7 +604,7 @@ export const useAppStore = create<AppState>()(
       createGroup: (input) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return '';
-        const user = get().users.find((u: any) => u.id === currentUserId) || getUserById(currentUserId);
+        const user = get().users.find((u: any) => u.id === currentUserId);
         if (!user || user.createdGroups.length >= 3) {
           toast.error('You can create at most 3 groups');
           return '';
@@ -644,7 +635,7 @@ export const useAppStore = create<AppState>()(
       joinGroup: (groupId) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
-        const user = get().users.find((u: any) => u.id === currentUserId) || getUserById(currentUserId);
+        const user = get().users.find((u: any) => u.id === currentUserId);
         const group = get().groups.find(g => g.id === groupId);
         if (!user || !group) return;
         if (user.joinedGroups.length >= 3) {
@@ -675,7 +666,7 @@ export const useAppStore = create<AppState>()(
       inviteByProfileCode: (groupId, profileCode) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return false;
-        const user = get().users.find((u: any) => u.id === currentUserId) || getUserById(currentUserId);
+        const user = get().users.find((u: any) => u.id === currentUserId);
         const invitedUser = get().users.find((u: any) => u.profileCode === profileCode);
         const group = get().groups.find(g => g.id === groupId);
         if (!user || !invitedUser || !group) {
@@ -781,7 +772,7 @@ export const useAppStore = create<AppState>()(
         const allUsers = get().users;
         const allUserIds = [...new Set([...friendIds, currentUserId])];
         return allUserIds.map(uid => {
-          const user = allUsers.find((u: any) => u.id === uid) || getUserById(uid);
+          const user = allUsers.find((u: any) => u.id === uid);
           const activeStories = get().stories
             .filter(s => s.userId === uid && new Date(s.expiresAt).getTime() > now)
             .sort((a, b) => a.createdAt.localeCompare(b.createdAt));

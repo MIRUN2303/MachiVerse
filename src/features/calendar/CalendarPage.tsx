@@ -7,7 +7,7 @@ import {
   addMonths, subMonths, parseISO, addWeeks, subWeeks,
 } from 'date-fns';
 import { useAppStore } from '../../store/useAppStore';
-import { SPORT_CONFIG } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
 import { Card, SportOrb, Badge, Chip, Button } from '../../components/ui';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
 import { FadeUp } from '../../components/motion';

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, differenceInSeconds, parseISO } from 'date-fns';
 import { useAppStore } from '../../store/useAppStore';
-import { USERS, GROUPS, SPORT_CONFIG, getGroupById } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
 import { Avatar, Button, StatCard, SportOrb, SectionHeader } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
@@ -39,9 +39,10 @@ const GroupEventCard: React.FC<{
 }> = ({ event, groupId, isHero = false }) => {
   const navigate = useNavigate();
   const currentUserId = useAppStore(s => s.currentUserId);
+  const groups = useAppStore(s => s.groups);
   const countdown = useCountdown(event.date, event.time);
   const cfg = SPORT_CONFIG[event.sport];
-  const group = getGroupById(groupId);
+  const group = groups.find(g => g.id === groupId);
   const myStatus = event.attendance.find(a => a.userId === currentUserId)?.status;
 
   if (isHero) {
@@ -224,9 +225,11 @@ export const HomePage: React.FC = () => {
   const currentUserId = useAppStore(s => s.currentUserId);
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
   const getMyGroupsNextEvents = useAppStore(s => s.getMyGroupsNextEvents);
+  const users = useAppStore(s => s.users);
+  const groups = useAppStore(s => s.groups);
   const [showCreate, setShowCreate] = useState(false);
 
-  const currentUser = USERS.find(u => u.id === currentUserId);
+  const currentUser = users.find(u => u.id === currentUserId);
 
   const hour = new Date().getHours();
   const greetingIcon = hour < 12 ? 'sunrise' : hour < 17 ? 'sun' : 'moon';
@@ -374,7 +377,7 @@ export const HomePage: React.FC = () => {
           className="mb-3"
         />
         <div className="flex gap-3 overflow-x-auto scrollbar-hidden pb-1">
-          {GROUPS.filter(g => g.members.some(m => m.userId === currentUserId)).map(group => {
+          {groups.filter(g => g.members.some(m => m.userId === currentUserId)).map(group => {
             const nextEvent = myGroupEvents.find(e => e.groupId === group.id);
             return (
               <motion.div key={group.id}

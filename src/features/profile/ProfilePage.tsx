@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { USERS, SPORT_CONFIG } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
 import { Avatar, Button } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
@@ -9,10 +9,10 @@ import { useAppStore } from '../../store/useAppStore';
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const currentUserId = useAppStore(s => s.currentUserId);
+  const users = useAppStore(s => s.users);
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
   const logout = useAppStore(s => s.logout);
-
-  const user = USERS.find(u => u.id === currentUserId);
+  const user = users.find(u => u.id === currentUserId);
 
   if (!isLoggedIn || !user) {
     return (

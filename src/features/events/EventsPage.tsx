@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import { useAppStore } from '../../store/useAppStore';
-import { SPORT_CONFIG, getUserById } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
 import { Card, Avatar, Badge, Button, SportOrb, SectionHeader, Chip } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { StaggerList, StaggerItem, FadeUp } from '../../components/motion';
@@ -22,6 +22,7 @@ const ATTENDANCE_OPTIONS: { status: AttendanceStatus; label: string; icon: strin
 export const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const users = useAppStore(s => s.users);
   const events = useAppStore(s => s.events);
   const updateAttendance = useAppStore(s => s.updateAttendance);
   const uploadEventImage = useAppStore(s => s.uploadEventImage);
@@ -90,7 +91,7 @@ export const EventDetailPage: React.FC = () => {
 
   const sportCfg = SPORT_CONFIG[event.sport];
   const myAttendance = event.attendance.find(a => a.userId === currentUserId);
-  const organizer = getUserById(event.organizer);
+  const organizer = users.find(u => u.id === event.organizer);
   const confirmed = event.attendance.filter(a => a.status === 'coming');
   const notComing = event.attendance.filter(a => a.status === 'not_coming');
 
@@ -169,7 +170,7 @@ export const EventDetailPage: React.FC = () => {
             <SectionHeader title={<span><Iconic name="message" size={16} /> Announcements</span>} className="mb-2" />
             <div className="space-y-2">
               {event.announcements.map(ann => {
-                const author = getUserById(ann.authorId);
+                const author = users.find(u => u.id === ann.authorId);
                 return (
                   <Card key={ann.id} padding="sm">
                     <div className="flex gap-2">
@@ -231,7 +232,7 @@ export const EventDetailPage: React.FC = () => {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {group.items.map(record => {
-                    const user = getUserById(record.userId);
+                    const user = users.find(u => u.id === record.userId);
                     if (!user) return null;
                     return (
                       <div key={record.userId} className="flex items-center gap-2 glass rounded-2xl px-3 py-1.5">
@@ -475,7 +476,7 @@ export const EventDetailPage: React.FC = () => {
                     {event.mvps.map((m, i) => (
                       <div key={m.userId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
                         <Iconic name={i === 0 ? 'trophy' : i === 1 ? 'medal' : 'star'} size={18} />
-                        <Avatar src={getUserById(m.userId)?.avatar} name={m.playerName} size="xs" />
+                        <Avatar src={users.find(u => u.id === m.userId)?.avatar} name={m.playerName} size="xs" />
                         <span className="flex-1 text-sm font-bold text-white">{m.playerName}</span>
                         <span className="text-xs text-white/50">{m.wins} win{m.wins !== 1 ? 's' : ''}</span>
                       </div>
@@ -501,7 +502,7 @@ export const EventDetailPage: React.FC = () => {
               const attending = event.attendance.filter(a => a.status === 'coming').map(a => a.userId);
               const canScore = event.status === 'live' && isEventAdmin;
               const getPlayerNames = (playerIds: string[]) =>
-                playerIds.map(pid => getUserById(pid)?.name.split(' ')[0] || '?').join(' & ');
+                playerIds.map(pid => users.find(u => u.id === pid)?.name.split(' ')[0] || '?').join(' & ');
 
               const formatLabel = league.format === 'single' ? 'Singles' : league.format === 'doubles' ? 'Doubles' : (league.teams[0]?.playerIds.length === 1 ? 'Singles' : 'Doubles');
 
@@ -643,7 +644,7 @@ export const EventDetailPage: React.FC = () => {
                             <p className="text-xs font-bold text-white/50 mb-1.5">Side 1 {maxPerSide > 1 ? `(pick ${maxPerSide})` : ''}</p>
                             <div className="flex flex-wrap gap-1.5">
                               {attending.map(pid => {
-                                const u = getUserById(pid);
+                                const u = users.find(u => u.id === pid);
                                 if (!u) return null;
                                 const sel = matchForm!.side1.includes(pid);
                                 const disabled = !sel && matchForm!.side1.length >= maxPerSide;
@@ -669,7 +670,7 @@ export const EventDetailPage: React.FC = () => {
                             <p className="text-xs font-bold text-white/50 mb-1.5">Side 2 {maxPerSide > 1 ? `(pick ${maxPerSide})` : ''}</p>
                             <div className="flex flex-wrap gap-1.5">
                               {attending.map(pid => {
-                                const u = getUserById(pid);
+                                const u = users.find(u => u.id === pid);
                                 if (!u) return null;
                                 const sel = matchForm!.side2.includes(pid);
                                 const disabled = !sel && matchForm!.side2.length >= maxPerSide;
@@ -862,6 +863,7 @@ export const EventsPage: React.FC = () => {
   const navigate = useNavigate();
   const events = useAppStore(s => s.events);
   const currentUserId = useAppStore(s => s.currentUserId);
+  const users = useAppStore(s => s.users);
   const groups = useAppStore(s => s.groups);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
   const [showCreate, setShowCreate] = useState(false);
@@ -946,7 +948,7 @@ export const EventsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex -space-x-1.5">
                         {event.attendance.filter(a => a.status === 'coming').slice(0, 3).map(a => {
-                          const u = getUserById(a.userId);
+                          const u = users.find(u => u.id === a.userId);
                           return u ? <Avatar key={a.userId} src={u.avatar} name={u.name} size="xs" /> : null;
                         })}
                       </div>

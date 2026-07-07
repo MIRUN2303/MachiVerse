@@ -1,0 +1,33 @@
+export const SPORT_CONFIG = {
+  badminton:  { emoji: '🏸', label: 'Badminton',    color: '#00ff41', bg: 'rgba(0,255,65,0.1)' },
+  cricket:    { emoji: '🏏', label: 'Cricket',      color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+  football:   { emoji: '⚽', label: 'Football',     color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  pickleball: { emoji: '🎾', label: 'Pickleball',   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  volleyball: { emoji: '🏐', label: 'Volleyball',   color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  basketball: { emoji: '🏀', label: 'Basketball',   color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  running:    { emoji: '🏃', label: 'Running',      color: '#3b82f6', bg: 'rgba(59,130,243,0.1)' },
+  cycling:    { emoji: '🚴', label: 'Cycling',      color: '#84cc16', bg: 'rgba(132,204,22,0.1)' },
+  trekking:   { emoji: '🥾', label: 'Trekking',     color: '#d97706', bg: 'rgba(217,119,6,0.1)' },
+  swimming:   { emoji: '🏊', label: 'Swimming',     color: '#0ea5e9', bg: 'rgba(14,165,233,0.1)' },
+  movie:      { emoji: '🎬', label: 'Movie Night',  color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+  cafe:       { emoji: '☕', label: 'Café Meetup',  color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  roadtrip:   { emoji: '🚗', label: 'Road Trip',    color: '#38bdf8', bg: 'rgba(56,189,248,0.1)' },
+  gaming:     { emoji: '🎮', label: 'Gaming',       color: '#c084fc', bg: 'rgba(192,132,252,0.1)' },
+  boardgames: { emoji: '🎲', label: 'Board Games',  color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
+  custom:     { emoji: '✨', label: 'Custom',       color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
+};
+
+export const BADGE_CONFIG = {
+  first_match:      { emoji: '🎯', label: 'First Match',        description: 'Played your first match', rarity: 'common' },
+  first_win:        { emoji: '🏆', label: 'First Win',          description: 'Won your first match', rarity: 'common' },
+  weekend_warrior:  { emoji: '⚔️',  label: 'Weekend Warrior',   description: 'Attended 5 weekends in a row', rarity: 'uncommon' },
+  five_wins:        { emoji: '🥇', label: '5 Wins',             description: 'Won 5 matches total', rarity: 'uncommon' },
+  ten_wins:         { emoji: '💫', label: '10 Wins',            description: 'Won 10 matches total', rarity: 'rare' },
+  twentyfive_wins:  { emoji: '💎', label: '25 Wins',            description: 'Won 25 matches total', rarity: 'rare' },
+  hundred_wins:     { emoji: '👑', label: '100 Wins',           description: 'Won 100 matches total', rarity: 'legendary' },
+  full_attendance:  { emoji: '🌟', label: 'Perfect Attendance', description: '100% attendance for a month', rarity: 'rare' },
+  captain:          { emoji: '🦅', label: 'Captain',            description: 'Organized 10 events', rarity: 'rare' },
+  iron_player:      { emoji: '⚡', label: 'Iron Player',        description: 'Never missed a weekend', rarity: 'legendary' },
+  mvp:              { emoji: '🎖️', label: 'MVP',                description: 'Most Valuable Player award', rarity: 'rare' },
+  longest_streak:   { emoji: '🔥', label: 'Longest Streak',     description: 'Won 7 in a row', rarity: 'rare' },
+};

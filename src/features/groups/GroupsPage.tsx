@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { GROUPS, SPORT_CONFIG, getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
+import { SPORT_CONFIG } from '../../data/sportConfig';
+import { getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
 import { Card, Avatar, Badge, Button, SectionHeader } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
@@ -36,14 +37,17 @@ const SportBadge: React.FC<{ sport: string; size?: 'sm' | 'xs' }> = ({ sport, si
 // MEMBER DROPDOWN
 // =============================================
 const MemberDropdown: React.FC<{ userId: string; groupId: string; currentUserRole?: string }> = ({ userId, groupId, currentUserRole }) => {
-  const user = getUserById(userId);
+  const groups = useAppStore(s => s.groups);
+  const users = useAppStore(s => s.users);
+  const user = users.find(u => u.id === userId);
   const [open, setOpen] = useState(false);
   const updateMemberRole = useAppStore(s => s.updateMemberRole);
   if (!user) return null;
 
-  const computed = computeMemberGroupStats(userId, groupId);
-  const overall = getOverallWinRate(userId);
-  const group = getGroupById(groupId);
+  const group = groups.find(g => g.id === groupId);
+  const member = group?.members.find(m => m.userId === userId);
+  const computed = member?.stats || { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 };
+  const overall = user.stats.winRate || 0;
   const member = group?.members.find(m => m.userId === userId);
   const roleCfg = ROLE_CONFIG[member?.role || 'member'] as typeof ROLE_CONFIG[keyof typeof ROLE_CONFIG];
   const isCreator = currentUserRole === 'creator';
@@ -433,8 +437,9 @@ export const GroupDetailPage: React.FC = () => {
   const [editGroupRules, setEditGroupRules] = useState('');
   const currentUserId = useAppStore(s => s.currentUserId);
   const updateGroupDetails = useAppStore(s => s.updateGroupDetails);
+  const groups = useAppStore(s => s.groups);
 
-  const group = GROUPS.find(g => g.id === id);
+  const group = groups.find(g => g.id === id);
   if (!group) return <div className="min-h-screen flex items-center justify-center"><p className="text-white/50">Group not found</p></div>;
 
   const myMember = group.members.find(m => m.userId === currentUserId);
@@ -805,12 +810,13 @@ export const GroupsPage: React.FC = () => {
   const currentUserId = useAppStore(s => s.currentUserId);
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
   const joinGroup = useAppStore(s => s.joinGroup);
+  const groups = useAppStore(s => s.groups);
   const [showCreate, setShowCreate] = useState(false);
 
   const currentUser = currentUserId ? getUserById(currentUserId) : null;
-  const myCreatedGroups = GROUPS.filter(g => g.members.some(m => m.userId === currentUserId && m.role === 'creator'));
-  const myJoinedGroups = GROUPS.filter(g => g.members.some(m => m.userId === currentUserId && m.role !== 'creator'));
-  const discoverGroups = GROUPS.filter(g => !g.members.some(m => m.userId === currentUserId));
+  const myCreatedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role === 'creator'));
+  const myJoinedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role !== 'creator'));
+  const discoverGroups = groups.filter(g => !g.members.some(m => m.userId === currentUserId));
   const canCreateMore = currentUser ? currentUser.createdGroups.length < 3 : false;
   const canJoinMore = currentUser ? currentUser.joinedGroups.length < 3 : false;
 
