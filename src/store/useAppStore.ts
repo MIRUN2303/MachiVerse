@@ -6,6 +6,31 @@ import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
 
+/** Construct a minimal user profile from auth metadata when no DB row exists. */
+function fallbackUser(authUser: any): any {
+  const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
+  return {
+    id: authUser.id,
+    name,
+    username: name.toLowerCase().replace(/\s+/g, ''),
+    email: authUser.email || '',
+    phone: '',
+    password: '',
+    profileCode: name.toUpperCase().split(' ')[0] + '001',
+    avatar: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`,
+    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+    bio: '',
+    favouriteSports: [],
+    badges: [],
+    stats: { totalMatches: 0, wins: 0, losses: 0, attendanceRate: 0, currentStreak: 0, longestStreak: 0, winRate: 0, weeklyActivity: [0,0,0,0,0,0,0], monthlyActivity: [], sportBreakdown: [], pointsTotal: 0, mvpCount: 0 },
+    createdGroups: [],
+    joinedGroups: [],
+    joinedAt: new Date().toISOString().split('T')[0],
+    level: 1,
+    xp: 0,
+  };
+}
+
 const uid = () => `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const gid = () => `g_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -182,11 +207,16 @@ export const useAppStore = create<AppState>()(
             }
           }
 
-          const currentUser = users.find((u: any) => u.id === currentUserId);
+          const currentUser = users.find((u: any) => u.id === currentUserId)
+            ?? (authUser ? fallbackUser(authUser) : undefined);
+          // Ensure fallback user is in the users array so lookups by id work everywhere
+          const allUsers = currentUser && !users.some((u: any) => u.id === currentUser.id)
+            ? [...users, currentUser]
+            : users;
           // isLoggedIn = !!session, not !!currentUserId — DB failure won't log the user out
           const isLoggedIn = !!authUser;
           const needsPhone = isLoggedIn && (!currentUser || !currentUser.phone);
-          set({ events, groups, notifications, friendships, stories, users, loaded: true, isLoggedIn, currentUserId, needsPhone });
+          set({ events, groups, notifications, friendships, stories, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
         } catch (e) {
           console.warn('Supabase load failed, using empty state', e);
           // Preserve existing isLoggedIn so a network hiccup doesn't log the user out
