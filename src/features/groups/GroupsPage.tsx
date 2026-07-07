@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { SPORT_CONFIG } from '../../data/sportConfig';
-import { getUserById, getGroupById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
+import { getUserById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupEvents, computeMemberGroupStats, getOverallWinRate } from '../../data/mockData';
 import { Card, Avatar, Badge, Button, SectionHeader } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
@@ -45,8 +45,9 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string; currentUserRol
   if (!user) return null;
 
   const group = groups.find(g => g.id === groupId);
-  const member = group?.members.find(m => m.userId === userId);
-  const computed = member?.stats || { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 };
+  const groupMember = group?.members.find(m => m.userId === userId);
+  const computed = groupMember?.stats || { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 };
+  const computedExt = computed as typeof computed & { sportBreakdown?: { sport: string; matchesPlayed: number }[] };
   const overall = user.stats.winRate || 0;
   const member = group?.members.find(m => m.userId === userId);
   const roleCfg = ROLE_CONFIG[member?.role || 'member'] as typeof ROLE_CONFIG[keyof typeof ROLE_CONFIG];
@@ -94,11 +95,11 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string; currentUserRol
                 <StatItem label="Win Rate" value={`${computed.winRate}%`} color={computed.winRate >= 60 ? '#10b981' : computed.winRate >= 40 ? '#f59e0b' : '#ef4444'} />
               </div>
 
-              {computed.sportBreakdown.length > 0 && (
+              {computedExt.sportBreakdown && computedExt.sportBreakdown.length > 0 && (
                 <>
                   <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1"><Iconic name="target" size={14} /> Per Sport</p>
                   <div className="space-y-1.5">
-                    {computed.sportBreakdown.map(s => {
+                    {computedExt.sportBreakdown.map(s => {
                       const cfg = SPORT_CONFIG[s.sport as keyof typeof SPORT_CONFIG];
                       return (
                         <div key={s.sport} className="flex items-center gap-2 rounded-xl p-2" style={{ background: `${cfg?.color || '#7c3aed'}08` }}>

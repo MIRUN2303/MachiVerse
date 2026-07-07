@@ -74,8 +74,8 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         <div className="flex gap-2 mt-3 flex-wrap">
-          {user.favouriteSports.map(sport => {
-            const cfg = SPORT_CONFIG[sport];
+          {user.favouriteSports.map((sport: string) => {
+            const cfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
             return (
               <span key={sport} className="text-xs font-medium px-3 py-1.5 rounded-full" style={{ background: cfg.bg, border: `1px solid ${cfg.color}40`, color: cfg.color }}>
                 <Iconic name={cfg.emoji} /> {cfg.label}

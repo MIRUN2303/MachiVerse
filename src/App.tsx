@@ -85,7 +85,7 @@ const AppContent: React.FC = () => {
     });
     return () => {
       connectionManager.stopPolling();
-      unsub();
+      unsub.data.subscription.unsubscribe();
     };
   }, [loaded, loadFromSupabase]);
 
