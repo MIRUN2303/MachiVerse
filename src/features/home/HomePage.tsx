@@ -265,7 +265,7 @@ export const HomePage: React.FC = () => {
                 >Sign In</Link>
                 <Link to="/signup" className="flex-1 max-w-[140px] py-3 rounded-2xl font-black text-sm text-center transition-all"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                >Get Started</Link>
+                >Sign Up</Link>
               </div>
             </div>
           </div>
@@ -291,6 +291,9 @@ export const HomePage: React.FC = () => {
       </div>
     );
   }
+
+  const myGroupEvents = getMyGroupsNextEvents();
+  const heroEntry = myGroupEvents[0];
 
   return (
     <div className="page-container !pb-24 space-y-5">
