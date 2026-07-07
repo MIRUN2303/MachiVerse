@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'motion/react';
 import { Toaster } from 'react-hot-toast';
 import { useAppStore } from './store/useAppStore';
+import * as auth from './lib/auth';
 import { connectionManager } from './lib/connection';
 
 import { BottomNav, AppHeader } from './components/layout/Navigation';
@@ -79,7 +80,13 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (!loaded) loadFromSupabase();
     connectionManager.startPolling(60000);
-    return () => connectionManager.stopPolling();
+    const unsub = auth.onAuthStateChange(() => {
+      loadFromSupabase();
+    });
+    return () => {
+      connectionManager.stopPolling();
+      unsub();
+    };
   }, [loaded, loadFromSupabase]);
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/complete-profile';
