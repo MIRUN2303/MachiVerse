@@ -292,6 +292,8 @@ export const HomePage: React.FC = () => {
     );
   }
 
+  return (
+    <div className="page-container !pb-24 space-y-5">
       {/* Greeting */}
       <FadeUp>
         <div className="flex items-center justify-between">
