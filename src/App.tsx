@@ -34,7 +34,7 @@ const pageVariants = {
     opacity: 0, y: -16, scale: 0.98, filter: 'blur(4px)',
     transition: {
       duration: 0.25,
-      ease: [0.22, 1, 0.36, 1],
+      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 };

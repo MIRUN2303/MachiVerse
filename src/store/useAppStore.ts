@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory } from '../data/types';
-import { getUserById } from '../data/mockData';
+import { getUserById, setCurrentUserId } from '../data/mockData';
 import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
@@ -827,5 +827,6 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
 
 
