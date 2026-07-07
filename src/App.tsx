@@ -74,7 +74,6 @@ const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent: React.FC = () => {
   const location = useLocation();
   const loadFromSupabase = useAppStore(s => s.loadFromSupabase);
-  const loaded = useAppStore(s => s.loaded);
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
 
   useEffect(() => {
