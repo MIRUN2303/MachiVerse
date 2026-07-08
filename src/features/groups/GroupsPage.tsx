@@ -21,19 +21,6 @@ const ROLE_CONFIG = {
 const LOGO_EMOJIS = ['🏸', '🏏', '⚽', '🏓', '🏐', '🏀', '🏃', '🚴', '🥾', '🏊', '🎬', '☕', '🚗', '🎮', '🎲', '🎯', '💪', '🧘', '🏋️', '⛰️', '🏕️', '🍕', '🎵', '🎨', '📸', '🌮', '🍔', '🧑‍🍳', '🎤', '🎧', '🏄', '🛹', '🥊', '🤸', '⛳', '🎿'];
 
 // =============================================
-// SPORT BADGE
-// =============================================
-const SportBadge: React.FC<{ sport: string; size?: 'sm' | 'xs' }> = ({ sport, size = 'xs' }) => {
-  const cfg = SPORT_CONFIG[sport as keyof typeof SPORT_CONFIG];
-  if (!cfg) return null;
-  return (
-    <span className={clsx('inline-flex items-center gap-1 rounded-full font-semibold', size === 'xs' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-0.5')}
-      style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`, color: cfg.color }}>
-      <Iconic name={cfg.emoji} /> {cfg.label}
-    </span>
-  );
-};
-
 // =============================================
 // MEMBER DROPDOWN
 // =============================================
