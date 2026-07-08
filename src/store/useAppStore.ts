@@ -143,6 +143,9 @@ interface AppState {
   inviteByProfileCode: (groupId: string, profileCode: string) => boolean;
   updateGroupDetails: (groupId: string, updates: Partial<Pick<Group, 'name' | 'description' | 'rules'>>) => void;
   updateMemberRole: (groupId: string, userId: string, role: 'admin' | 'member') => void;
+  deleteGroup: (groupId: string) => void;
+  exitGroup: (groupId: string) => void;
+  kickMember: (groupId: string, userId: string) => void;
 
   stories: Story[];
   friendships: Friendship[];
@@ -767,6 +770,50 @@ export const useAppStore = create<AppState>()(
         }));
         db.updateGroupMemberRole(groupId, userId, role)
           .catch(e => console.warn('Failed to update member role', e));
+      },
+
+      deleteGroup: (groupId) => {
+        const group = get().groups.find(g => g.id === groupId);
+        if (!group) return;
+        set(s => ({ groups: s.groups.filter(g => g.id !== groupId) }));
+        db.deleteGroupInDb(groupId).catch(e => console.warn('Failed to delete group in db', e));
+        toast.success(`Group "${group.name}" deleted`);
+      },
+
+      exitGroup: (groupId) => {
+        const currentUserId = get().currentUserId;
+        if (!currentUserId) return;
+        const group = get().groups.find(g => g.id === groupId);
+        if (!group) return;
+        const user = get().users.find((u: any) => u.id === currentUserId);
+        if (!user) return;
+        user.joinedGroups = user.joinedGroups.filter((id: string) => id !== groupId);
+        set(s => ({
+          groups: s.groups.map(g =>
+            g.id === groupId
+              ? { ...g, members: g.members.filter(m => m.userId !== currentUserId), memberCount: g.memberCount - 1 }
+              : g
+          ),
+        }));
+        db.updateGroup(groupId, { member_count: Math.max(0, group.memberCount - 1) }).catch(e => console.warn('Failed to update group', e));
+        db.removeGroupMember(groupId, currentUserId).catch(e => console.warn('Failed to remove member', e));
+        toast.success(`Left "${group.name}"`);
+      },
+
+      kickMember: (groupId, userId) => {
+        const group = get().groups.find(g => g.id === groupId);
+        if (!group) return;
+        const kicked = get().users.find((u: any) => u.id === userId);
+        set(s => ({
+          groups: s.groups.map(g =>
+            g.id === groupId
+              ? { ...g, members: g.members.filter(m => m.userId !== userId), memberCount: g.memberCount - 1 }
+              : g
+          ),
+        }));
+        db.updateGroup(groupId, { member_count: Math.max(0, group.memberCount - 1) }).catch(e => console.warn('Failed to update group', e));
+        db.removeGroupMember(groupId, userId).catch(e => console.warn('Failed to remove member', e));
+        toast.success(`Removed ${kicked?.name || 'member'} from group`);
       },
 
       // ---- FRIENDS ----

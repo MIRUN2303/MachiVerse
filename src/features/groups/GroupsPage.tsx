@@ -560,6 +560,20 @@ export const GroupDetailPage: React.FC = () => {
               </Card>
             </FadeUp>
           )}
+          {myRole === 'creator' && (
+            <button onClick={() => { if (window.confirm(`Delete "${group.name}" permanently?`)) { useAppStore.getState().deleteGroup(group.id); navigate('/groups'); } }}
+              className="w-full text-xs font-bold mt-2 py-2.5 rounded-xl transition-all"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
+              <Iconic name="trash" size={14} /> Delete Group
+            </button>
+          )}
+          {myRole && myRole !== 'creator' && (
+            <button onClick={() => { if (window.confirm('Leave this group?')) { useAppStore.getState().exitGroup(group.id); navigate('/groups'); } }}
+              className="w-full text-xs font-bold mt-2 py-2.5 rounded-xl transition-all"
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.7)' }}>
+              <Iconic name="log_out" size={14} /> Exit Group
+            </button>
+          )}
         </FadeUp>
 
         <FadeUp delay={0.1}>

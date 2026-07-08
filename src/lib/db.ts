@@ -134,6 +134,16 @@ export async function updateGroupMemberRole(groupId: string, userId: string, rol
   if (error) throw error;
 }
 
+export async function deleteGroupInDb(id: string): Promise<void> {
+  const { error } = await supabase.from('groups').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function removeGroupMember(groupId: string, userId: string): Promise<void> {
+  const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId);
+  if (error) throw error;
+}
+
 export async function updateGroup(id: string, updates: any): Promise<void> {
   const { error } = await supabase.from('groups').update(updates).eq('id', id);
   if (error) throw error;
