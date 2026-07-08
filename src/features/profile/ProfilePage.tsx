@@ -50,31 +50,6 @@ export const ProfilePage: React.FC = () => {
   const groups = useAppStore(s => s.groups);
   const allUsers = useAppStore(s => s.users);
 
-  if (!isLoggedIn || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <FadeUp>
-          <div className="text-center space-y-4 max-w-xs">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-              style={{ background: 'rgba(var(--green-rgb),0.1)', border: '1px solid rgba(var(--green-rgb),0.2)' }}>
-              <Iconic name="badminton" size={32} />
-            </div>
-            <h2 className="font-display font-black text-2xl text-white">Your Profile</h2>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Sign in to view your stats, badges, and activity.</p>
-            <div className="flex gap-3 justify-center pt-2">
-              <Link to="/login" className="flex-1 max-w-[120px] py-3 rounded-2xl font-black text-sm text-center transition-all"
-                style={{ background: 'var(--green)', color: 'black' }}
-              >Sign In</Link>
-              <Link to="/signup" className="flex-1 max-w-[120px] py-3 rounded-2xl font-black text-sm text-center transition-all"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-              >Sign Up</Link>
-            </div>
-          </div>
-        </FadeUp>
-      </div>
-    );
-  }
-
   const friends = useMemo(() => {
     const accepted = friendships.filter(f => f.status === 'accepted' && (f.userId === currentUserId || f.friendId === currentUserId));
     return accepted.map(f => {
@@ -100,14 +75,15 @@ export const ProfilePage: React.FC = () => {
     ).slice(0, 10);
   }, [searchQuery, allUsers, currentUserId]);
 
-  const weeklyData = DAYS.map((day: string, i: number) => ({ day, value: user.stats.weeklyActivity[i] || 0 }));
-  const monthlyData: { month: string; matches: number; wins: number }[] = user.stats.monthlyActivity?.length ? user.stats.monthlyActivity : [];
-  const sportData: { sport: string; matches: number; wins: number }[] = user.stats.sportBreakdown?.length ? user.stats.sportBreakdown : [];
+  const weeklyData = user ? DAYS.map((day: string, i: number) => ({ day, value: user.stats.weeklyActivity[i] || 0 })) : [];
+  const monthlyData: { month: string; matches: number; wins: number }[] = user?.stats.monthlyActivity?.length ? user.stats.monthlyActivity : [];
+  const sportData: { sport: string; matches: number; wins: number }[] = user?.stats.sportBreakdown?.length ? user.stats.sportBreakdown : [];
   const totalSportMatches = sportData.reduce((s: number, d: { matches: number }) => s + d.matches, 0) || 1;
   const maxWeekly = Math.max(1, ...weeklyData.map(d => d.value));
   const badgeList = Object.entries(BADGE_CONFIG) as [string, { emoji: string; label: string; description: string; rarity: string }][];
 
   const performanceScore = useMemo(() => {
+    if (!user) return 0;
     const weights = { winRate: 0.3, attendanceRate: 0.2, streak: 0.15, mvp: 0.15, points: 0.1, matches: 0.1 };
     const w = user.stats.winRate;
     const a = user.stats.attendanceRate;
@@ -117,7 +93,7 @@ export const ProfilePage: React.FC = () => {
     const t = Math.min(100, (user.stats.totalMatches / 50) * 100);
     const score = w * weights.winRate + a * weights.attendanceRate + s * weights.streak + m * weights.mvp + p * weights.points + t * weights.matches;
     return Math.round(score);
-  }, [user.stats, user.level]);
+  }, [user?.stats, user?.level]);
 
   const performanceColor = performanceScore >= 80 ? '#10b981' : performanceScore >= 55 ? '#f59e0b' : performanceScore >= 30 ? '#f97316' : '#ef4444';
   const perfRingDash = `${(performanceScore / 100) * 283} 283`;
@@ -125,7 +101,32 @@ export const ProfilePage: React.FC = () => {
   const todayIndex = new Date().getDay();
   const adjustedToday = todayIndex === 0 ? 6 : todayIndex - 1;
 
-  const myGroups = groups.filter(g => user.createdGroups.includes(g.id) || user.joinedGroups.includes(g.id));
+  const myGroups = user ? groups.filter(g => user.createdGroups.includes(g.id) || user.joinedGroups.includes(g.id)) : [];
+
+  if (!isLoggedIn || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <FadeUp>
+          <div className="text-center space-y-4 max-w-xs">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+              style={{ background: 'rgba(var(--green-rgb),0.1)', border: '1px solid rgba(var(--green-rgb),0.2)' }}>
+              <Iconic name="badminton" size={32} />
+            </div>
+            <h2 className="font-display font-black text-2xl text-white">Your Profile</h2>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Sign in to view your stats, badges, and activity.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Link to="/login" className="flex-1 max-w-[120px] py-3 rounded-2xl font-black text-sm text-center transition-all"
+                style={{ background: 'var(--green)', color: 'black' }}
+              >Sign In</Link>
+              <Link to="/signup" className="flex-1 max-w-[120px] py-3 rounded-2xl font-black text-sm text-center transition-all"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+              >Sign Up</Link>
+            </div>
+          </div>
+        </FadeUp>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-28 max-w-lg mx-auto px-4">
