@@ -1026,9 +1026,9 @@ export const useAppStore = create<AppState>()(
 
         set(s => ({ groups: [...s.groups, newGroup] }));
 
-        db.createGroupInDb(newGroup).catch(e => toast.error('Failed to save group: ' + e.message));
-        db.addGroupMember({ group_id: newId, user_id: currentUserId, role: 'creator', joined_at: newGroup.createdAt, matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
-          .catch(e => toast.error('Failed to add group member: ' + e.message));
+        db.createGroupInDb(newGroup)
+          .then(() => db.addGroupMember({ group_id: newId, user_id: currentUserId, role: 'creator', joined_at: newGroup.createdAt, matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 }))
+          .catch(e => toast.error('Failed to save group: ' + e.message));
         get().addXp(currentUserId, 30, 'Created a group');
 
         toast.success(`Group "${input.name}" created!`);
@@ -1059,9 +1059,9 @@ export const useAppStore = create<AppState>()(
 
         set(s => ({ groups: s.groups.map(g => g.id === groupId ? group : g) }));
 
-        db.updateGroup(groupId, { member_count: group.memberCount }).catch(dbError('Failed to update group'));
-        db.addGroupMember({ group_id: groupId, user_id: currentUserId, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
-          .catch(dbError('Failed to add group member'));
+        db.updateGroup(groupId, { member_count: group.memberCount })
+          .then(() => db.addGroupMember({ group_id: groupId, user_id: currentUserId, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 }))
+          .catch(dbError('Failed to join group'));
 
         toast.success(`Joined "${group.name}"!`);
       },
@@ -1126,8 +1126,8 @@ export const useAppStore = create<AppState>()(
 
         set(s => ({ groups: s.groups.map(g => g.id === groupId ? group : g) }));
 
-        db.updateGroup(groupId, { member_count: group.memberCount }).catch(dbError('Failed to update group'));
-        db.addGroupMember({ group_id: groupId, user_id: invitedUser.id, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
+        db.updateGroup(groupId, { member_count: group.memberCount })
+          .then(() => db.addGroupMember({ group_id: groupId, user_id: invitedUser.id, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 }))
           .catch(dbError('Failed to add group member'));
 
         // Update matching request
@@ -1186,8 +1186,11 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteGroup: (groupId) => {
-        const group = get().groups.find(g => g.id === groupId);
+        const state = get();
+        const group = state.groups.find(g => g.id === groupId);
         if (!group) return;
+        const isCreator = group.members.some(m => m.userId === state.currentUserId && m.role === 'creator');
+        if (!isCreator) { toast.error('Only the group creator can delete this group'); return; }
         set(s => ({ groups: s.groups.filter(g => g.id !== groupId) }));
         db.deleteGroupInDb(groupId).catch(dbError('Failed to delete group in db'));
         toast.success(`Group "${group.name}" deleted`);
@@ -1319,8 +1322,8 @@ export const useAppStore = create<AppState>()(
           stats: { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 },
         });
         set(s => ({ groups: s.groups.map(g => g.id === request.groupId ? group : g) }));
-        db.updateGroup(request.groupId, { member_count: group.memberCount }).catch(dbError('Failed to update group'));
-        db.addGroupMember({ group_id: request.groupId, user_id: request.userId, role: 'member', joined_at: now.split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
+        db.updateGroup(request.groupId, { member_count: group.memberCount })
+          .then(() => db.addGroupMember({ group_id: request.groupId, user_id: request.userId, role: 'member', joined_at: now.split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 }))
           .catch(dbError('Failed to add group member'));
 
         const invitedUser = get().users.find((u: any) => u.id === request.userId);
