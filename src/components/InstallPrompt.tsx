@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Iconic } from './ui/icons';
 
-const STORAGE_KEY = 'whosin-install-dismissed';
+const STORAGE_KEY = 'whosin-install-last';
 
 export const InstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    const last = localStorage.getItem(STORAGE_KEY);
+    const today = new Date().toDateString();
+    if (last === today) return;
     if (window.matchMedia('(display-mode: standalone)').matches) return;
 
     const handler = (e: Event) => {
@@ -25,12 +27,15 @@ export const InstallPrompt: React.FC = () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const result = await deferredPrompt.userChoice;
-    if (result.outcome === 'accepted') setVisible(false);
+    if (result.outcome === 'accepted') {
+      localStorage.setItem(STORAGE_KEY, new Date().toDateString());
+      setVisible(false);
+    }
     setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    localStorage.setItem(STORAGE_KEY, new Date().toDateString());
     setVisible(false);
   };
 
@@ -38,17 +43,17 @@ export const InstallPrompt: React.FC = () => {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: 120, opacity: 0 }}
+          initial={{ y: -60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 120, opacity: 0 }}
+          exit={{ y: -60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 24 }}
           className="fixed top-4 left-4 right-4 z-[999] max-w-md mx-auto"
         >
           <div className="glass border border-white/10 rounded-2xl p-4 flex items-start gap-3 shadow-2xl"
             style={{ background: 'rgba(8,8,8,0.96)', backdropFilter: 'blur(24px)' }}>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(170,235,0,0.12)' }}>
-              <span className="text-2xl font-black" style={{ color: '#aaeb00', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Wi</span>
+              style={{ background: 'rgba(var(--green-rgb),0.12)' }}>
+              <span className="text-2xl font-black" style={{ color: 'var(--green)', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Wi</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white">Install WhosIn</p>
@@ -56,7 +61,7 @@ export const InstallPrompt: React.FC = () => {
               <div className="flex gap-2 mt-2.5">
                 <button onClick={handleInstall}
                   className="text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all active:scale-95"
-                  style={{ background: '#aaeb00', color: '#080808' }}>
+                  style={{ background: 'var(--green)', color: '#080808' }}>
                   Install
                 </button>
                 <button onClick={handleDismiss}
