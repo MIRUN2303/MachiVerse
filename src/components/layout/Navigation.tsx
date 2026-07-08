@@ -139,13 +139,16 @@ export const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => {
 
   return (
     <motion.button
-      className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full flex items-center justify-center focus:outline-none"
+      className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-2xl flex items-center justify-center focus:outline-none"
       style={{
-        background: 'var(--green)',
-        boxShadow: '0 6px 24px rgba(var(--green-rgb), 0.5)',
+        background: 'linear-gradient(135deg, var(--green) 0%, var(--green-bright) 100%)',
+        boxShadow: '0 6px 28px rgba(var(--green-rgb), 0.55)',
       }}
-      whileHover={{ scale: 1.1, boxShadow: '0 8px 32px rgba(var(--green-rgb), 0.7)' }}
-      whileTap={{ scale: 0.92 }}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.3 }}
+      whileHover={{ scale: 1.08, boxShadow: '0 8px 36px rgba(var(--green-rgb), 0.75)' }}
+      whileTap={{ scale: 0.88 }}
       onClick={onClick}
     >
       <IconPlus size={26} strokeWidth={2.5} className="text-black" />

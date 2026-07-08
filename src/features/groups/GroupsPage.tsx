@@ -468,14 +468,30 @@ export const GroupDetailPage: React.FC = () => {
   return (
     <div className="pb-24 max-w-lg mx-auto">
       <div
-        className="relative h-44 overflow-hidden rounded-b-3xl"
+        className="relative h-48 overflow-hidden rounded-b-3xl"
         style={{
           backgroundImage: `linear-gradient(to top, #080808 0%, #080808 20%, transparent 60%), url(${group.banner})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
-        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 glass w-10 h-10 rounded-2xl flex items-center justify-center text-white">←</button>
+        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-20 w-10 h-10 rounded-2xl flex items-center justify-center text-white"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>←</button>
+        <div className="absolute top-4 right-4 z-20 flex gap-1.5">
+          {group.tags.slice(0, 3).map(tag => {
+            const cfg = SPORT_CONFIG[tag as keyof typeof SPORT_CONFIG];
+            return (
+              <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md"
+                style={{ background: `${cfg?.color || '#7c3aed'}20`, border: `1px solid ${cfg?.color || '#7c3aed'}35`, color: cfg?.color || '#a78bfa' }}>
+                {cfg?.emoji && <Iconic name={cfg.emoji} size={10} />} {cfg?.label || tag}
+              </span>
+            );
+          })}
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md"
+            style={{ background: group.isPrivate ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: `1px solid ${group.isPrivate ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'}`, color: group.isPrivate ? '#ef4444' : '#34d399' }}>
+            <Iconic name={group.isPrivate ? 'shield' : 'globe'} size={10} /> {group.isPrivate ? 'Private' : 'Public'}
+          </span>
+        </div>
       </div>
 
       <div className="px-4 mt-4 space-y-4">
@@ -486,11 +502,7 @@ export const GroupDetailPage: React.FC = () => {
             </div>
             <div className="flex-1">
               <h1 className="font-display font-black text-xl text-white">{group.name}</h1>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {group.tags.map(tag => <SportBadge key={tag} sport={tag} />)}
-                {group.isPrivate ? <Badge variant="glass" size="sm"><Iconic name="shield" size={12} /> Private</Badge> : <Badge variant="green" size="sm"><Iconic name="globe" size={12} /> Public</Badge>}
-              </div>
-              <p className="text-white/60 text-sm mt-2 leading-relaxed">{group.description}</p>
+              <p className="text-white/60 text-sm mt-1 leading-relaxed">{group.description}</p>
             </div>
           </div>
         </FadeUp>
@@ -560,20 +572,29 @@ export const GroupDetailPage: React.FC = () => {
               </Card>
             </FadeUp>
           )}
-          {myRole === 'creator' && (
-            <button onClick={() => { if (window.confirm(`Delete "${group.name}" permanently?`)) { useAppStore.getState().deleteGroup(group.id); navigate('/groups'); } }}
-              className="w-full text-xs font-bold mt-2 py-2.5 rounded-xl transition-all"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
-              <Iconic name="trash" size={14} /> Delete Group
-            </button>
-          )}
-          {myRole && myRole !== 'creator' && (
-            <button onClick={() => { if (window.confirm('Leave this group?')) { useAppStore.getState().exitGroup(group.id); navigate('/groups'); } }}
-              className="w-full text-xs font-bold mt-2 py-2.5 rounded-xl transition-all"
-              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.7)' }}>
-              <Iconic name="log_out" size={14} /> Exit Group
-            </button>
-          )}
+          <div className="pt-4 mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Iconic name="alert_triangle" size={12} /> Danger Zone</p>
+            {myRole === 'creator' && (
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { if (window.confirm(`Delete "${group.name}" permanently? All events and data will be lost.`)) { useAppStore.getState().deleteGroup(group.id); navigate('/groups'); } }}
+                className="w-full text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+                <Iconic name="trash" size={16} /> Delete Group
+              </motion.button>
+            )}
+            {myRole && myRole !== 'creator' && (
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { if (window.confirm('Leave this group?')) { useAppStore.getState().exitGroup(group.id); navigate('/groups'); } }}
+                className="w-full text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.7)' }}>
+                <Iconic name="log_out" size={16} /> Exit Group
+              </motion.button>
+            )}
+          </div>
         </FadeUp>
 
         <FadeUp delay={0.1}>
@@ -879,18 +900,24 @@ export const GroupsPage: React.FC = () => {
           {myCreatedGroups.map(group => (
             <StaggerItem key={group.id}>
               <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
-                <div className="relative h-24 overflow-hidden">
+                <div className="relative h-28 overflow-hidden">
                   <img src={group.banner} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/85 via-[#0f0a1e]/30 to-transparent" />
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md"
+                      style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.35)', color: '#fbbf24' }}>
+                      <Iconic name="crown" size={12} /> Creator
+                    </span>
+                  </div>
                   <div className="absolute inset-0 p-4 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <span style={{ fontSize: 24 }}>{group.logo}</span>
                     </div>
                     <div>
-                      <p className="font-display font-bold text-white">{group.name}</p>
-                      <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
+                      <p className="font-display font-bold text-white drop-shadow-lg">{group.name}</p>
+                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members · {group.totalEvents} events</p>
                     </div>
-                    <div className="ml-auto"><Badge variant="amber"><Iconic name="crown" size={12} /> Creator</Badge></div>
                   </div>
                 </div>
               </Card>
@@ -911,16 +938,30 @@ export const GroupsPage: React.FC = () => {
           {myJoinedGroups.map(group => (
             <StaggerItem key={group.id}>
               <Card interactive padding="none" onClick={() => navigate(`/groups/${group.id}`)}>
-                <div className="relative h-24 overflow-hidden">
+                <div className="relative h-28 overflow-hidden">
                   <img src={group.banner} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/85 via-[#0f0a1e]/30 to-transparent" />
+                  {group.tags.length > 0 && (
+                    <div className="absolute top-2 right-2 z-10 flex gap-1">
+                      {group.tags.slice(0, 2).map(tag => {
+                        const cfg = SPORT_CONFIG[tag as keyof typeof SPORT_CONFIG];
+                        return (
+                          <span key={tag} className="text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md"
+                            style={{ background: `${cfg?.color || '#7c3aed'}20`, border: `1px solid ${cfg?.color || '#7c3aed'}30`, color: cfg?.color || '#a78bfa' }}>
+                            {cfg?.label || tag}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="absolute inset-0 p-4 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <span style={{ fontSize: 24 }}>{group.logo}</span>
                     </div>
                     <div>
-                      <p className="font-display font-bold text-white">{group.name}</p>
-                      <p className="text-white/50 text-xs">{group.memberCount} members · {group.totalEvents} events</p>
+                      <p className="font-display font-bold text-white drop-shadow-lg">{group.name}</p>
+                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members · {group.totalEvents} events</p>
                     </div>
                   </div>
                 </div>
