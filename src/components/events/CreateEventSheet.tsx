@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
@@ -256,8 +257,10 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
   };
 
   const minDate = new Date().toISOString().split('T')[0];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
 
-  return (
+  const content = (
     <AnimatePresence>
       {isOpen && (
         <>
@@ -664,4 +667,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
       )}
     </AnimatePresence>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 };
