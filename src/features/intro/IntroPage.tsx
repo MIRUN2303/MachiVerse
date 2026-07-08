@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../../store/useAppStore';
 
 const CINEMATIC = [0.22, 1, 0.36, 1] as const;
+const GRID = 8;
 
 type Phase = 'curtain' | 'build' | 'flash' | 'sweep' | 'tagline' | 'out';
 
@@ -18,24 +19,24 @@ export const IntroPage: React.FC = () => {
 
   useEffect(() => {
     if (!loaded) return;
-    const t = setTimeout(() => setPhase('curtain'), 50);
+    const t = setTimeout(() => setPhase('curtain'), 30);
     return () => clearTimeout(t);
   }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;
     const schedule: [number, Phase][] = [
-      [500, 'build'],
-      [1100, 'flash'],
-      [1600, 'sweep'],
-      [2150, 'tagline'],
-      [2800, 'out'],
+      [200, 'build'],
+      [550, 'flash'],
+      [850, 'sweep'],
+      [1250, 'tagline'],
+      [1800, 'out'],
     ];
     const timers = schedule.map(([delay, p]) =>
-      setTimeout(() => setPhase(p as Phase), delay)
+      setTimeout(() => setPhase(p), delay)
     );
-    const fadeTimer = setTimeout(() => setPageOpacity(0), 2900);
-    const navTimer = setTimeout(() => navigate(target, { replace: true }), 3200);
+    const fadeTimer = setTimeout(() => setPageOpacity(0), 1900);
+    const navTimer = setTimeout(() => navigate(target, { replace: true }), 2200);
 
     return () => { timers.forEach(clearTimeout); clearTimeout(fadeTimer); clearTimeout(navTimer); };
   }, [loaded, navigate, target]);
@@ -44,65 +45,94 @@ export const IntroPage: React.FC = () => {
     <motion.div
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden"
       animate={{ opacity: pageOpacity }}
-      transition={{ duration: 0.4, ease: CINEMATIC }}
+      transition={{ duration: 0.35, ease: CINEMATIC }}
       style={{ willChange: 'opacity' }}
     >
       {/* ── Background image layers ── */}
-      {/* Mobile bg */}
-      <motion.div
-        className="absolute inset-0 sm:hidden"
-        initial={{ opacity: 0, scale: 1.15, filter: 'blur(14px)' }}
-        animate={{
-          opacity: phase === 'out' ? 0 : phase === 'curtain' ? 0.45 : 0.5,
-          scale: phase === 'out' ? 1.1 : phase === 'curtain' ? 1.15 : 1,
-          filter: phase === 'out'
-            ? 'blur(10px)'
-            : phase === 'curtain'
-              ? 'blur(14px)'
-              : 'blur(0px)',
-        }}
-        transition={{
-          duration: 1.8,
-          ease: CINEMATIC,
-          scale: { duration: 2.2, ease: CINEMATIC },
-          filter: { duration: 2, ease: CINEMATIC },
-        }}
-        style={{
-          backgroundImage: 'url(/intro-bg/mobile.webp)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          willChange: 'transform, filter, opacity',
-        }}
-      />
+      <div className="absolute inset-0 sm:hidden">
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0, scale: 1.12, filter: 'blur(12px)' }}
+          animate={{
+            opacity: 0.45,
+            scale: 1,
+            filter: 'blur(0px)',
+          }}
+          transition={{ duration: 1.2, ease: CINEMATIC }}
+          style={{
+            backgroundImage: 'url(/intro-bg/mobile.webp)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            willChange: 'transform, filter',
+          }}
+        />
+      </div>
+      <div className="absolute inset-0 max-sm:hidden">
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0, scale: 1.12, filter: 'blur(12px)' }}
+          animate={{
+            opacity: 0.5,
+            scale: 1,
+            filter: 'blur(0px)',
+          }}
+          transition={{ duration: 1.2, ease: CINEMATIC }}
+          style={{
+            backgroundImage: 'url(/intro-bg/desktop.webp)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            willChange: 'transform, filter',
+          }}
+        />
+      </div>
 
-      {/* Desktop bg */}
-      <motion.div
-        className="absolute inset-0 max-sm:hidden"
-        initial={{ opacity: 0, scale: 1.15, filter: 'blur(14px)' }}
-        animate={{
-          opacity: phase === 'out' ? 0 : phase === 'curtain' ? 0.45 : 0.5,
-          scale: phase === 'out' ? 1.1 : phase === 'curtain' ? 1.15 : 1,
-          filter: phase === 'out'
-            ? 'blur(10px)'
-            : phase === 'curtain'
-              ? 'blur(14px)'
-              : 'blur(0px)',
-        }}
-        transition={{
-          duration: 1.8,
-          ease: CINEMATIC,
-          scale: { duration: 2.2, ease: CINEMATIC },
-          filter: { duration: 2, ease: CINEMATIC },
-        }}
-        style={{
-          backgroundImage: 'url(/intro-bg/desktop.webp)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          willChange: 'transform, filter, opacity',
-        }}
-      />
+      {/* ── Tech grid pixel-mask reveal ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {Array.from({ length: GRID * GRID }).map((_, i) => {
+          const row = Math.floor(i / GRID);
+          const col = i % GRID;
+          return (
+            <motion.div
+              key={i}
+              className="absolute"
+              style={{
+                width: `${100 / GRID}%`,
+                height: `${100 / GRID}%`,
+                left: `${(col / GRID) * 100}%`,
+                top: `${(row / GRID) * 100}%`,
+                background: 'var(--bg-base)',
+              }}
+              initial={{ opacity: 1, scale: 1, borderRadius: 0 }}
+              animate={{
+                opacity: phase === 'curtain'
+                  ? 1 - (0.08 + (row + col) / (GRID * 2 - 2) * 0.3)
+                  : 0,
+                scale: phase === 'curtain' ? 1 : 0.7,
+                borderRadius: phase === 'curtain' ? 0 : '30%',
+              }}
+              transition={{
+                opacity: {
+                  duration: 0.35,
+                  delay: 0.1 + (row + col) * 0.025,
+                  ease: 'easeOut',
+                },
+                scale: {
+                  duration: 0.4,
+                  delay: 0.1 + (row + col) * 0.025,
+                  ease: CINEMATIC,
+                },
+                borderRadius: {
+                  duration: 0.4,
+                  delay: 0.1 + (row + col) * 0.025,
+                  ease: CINEMATIC,
+                },
+              }}
+            />
+          );
+        })}
+      </div>
 
-      {/* ── Gradient overlay — deepens on exit for curtain effect ── */}
+      {/* ── Dark gradient overlay ── */}
       <motion.div
         className="absolute inset-0"
         animate={{
@@ -110,18 +140,33 @@ export const IntroPage: React.FC = () => {
             ? 'radial-gradient(ellipse at center, rgba(8,8,8,0.7) 0%, rgba(8,8,8,0.92) 100%)'
             : 'radial-gradient(ellipse at center, rgba(8,8,8,0.35) 0%, rgba(8,8,8,0.6) 100%)',
         }}
-        transition={{ duration: 1.2, ease: CINEMATIC }}
+        transition={{ duration: 0.9, ease: CINEMATIC }}
       />
 
-      {/* ── Edge vignette that tightens on exit ── */}
+      {/* ── Vignette ── */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
         animate={{
           boxShadow: phase === 'out'
-            ? 'inset 0 0 120px 60px rgba(8,8,8,0.7)'
-            : 'inset 0 0 60px 20px rgba(8,8,8,0.3)',
+            ? 'inset 0 0 100px 50px rgba(8,8,8,0.7)'
+            : 'inset 0 0 50px 15px rgba(8,8,8,0.3)',
         }}
-        transition={{ duration: 1.4, ease: CINEMATIC }}
+        transition={{ duration: 1, ease: CINEMATIC }}
+      />
+
+      {/* ── Persistent tech grid overlay ── */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(34,212,91,0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34,212,91,0.5) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.04 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
       />
 
       {/* ── Ambient glow ── */}
@@ -133,10 +178,10 @@ export const IntroPage: React.FC = () => {
           opacity: phase === 'curtain' || phase === 'build' ? 1 : 0.5,
           scale: 1,
         }}
-        transition={{ duration: 1.2, ease: CINEMATIC }}
+        transition={{ duration: 0.8, ease: CINEMATIC }}
       />
 
-      {/* Electric glow ring */}
+      {/* ── Electric glow ring ── */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
         style={{
@@ -150,7 +195,7 @@ export const IntroPage: React.FC = () => {
           opacity: phase === 'flash' ? 0.6 : phase === 'sweep' ? 0.3 : 0,
           scale: phase === 'flash' ? 1.15 : 1,
         }}
-        transition={{ duration: 0.5, ease: CINEMATIC }}
+        transition={{ duration: 0.4, ease: CINEMATIC }}
       />
 
       {/* ===== LOGO ASSEMBLY ===== */}
@@ -165,7 +210,7 @@ export const IntroPage: React.FC = () => {
               ? 'inset(0 100% 0 0)'
               : 'inset(0 0% 0 0)',
           }}
-          transition={{ duration: 0.7, ease: CINEMATIC, delay: 0 }}
+          transition={{ duration: 0.5, ease: CINEMATIC }}
         >
           Whos
         </motion.span>
@@ -181,9 +226,9 @@ export const IntroPage: React.FC = () => {
             scale: phase === 'flash' ? 1.15 : 1,
           }}
           transition={{
-            opacity: { duration: 0.35, ease: CINEMATIC, delay: 0.5 },
-            x: { type: 'spring', damping: 20, stiffness: 300, delay: 0.5 },
-            scale: { duration: 0.25, ease: CINEMATIC, delay: 0.9 },
+            opacity: { duration: 0.25, ease: CINEMATIC, delay: 0.25 },
+            x: { type: 'spring', damping: 22, stiffness: 320, delay: 0.25 },
+            scale: { duration: 0.2, ease: CINEMATIC, delay: 0.5 },
           }}
         >
           <span
@@ -206,7 +251,7 @@ export const IntroPage: React.FC = () => {
               opacity: phase === 'flash' ? 0.8 : 0,
               scale: phase === 'flash' ? 2.5 : 0.3,
             }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           />
         </motion.span>
 
@@ -222,37 +267,57 @@ export const IntroPage: React.FC = () => {
               : 'inset(0 0% 0 0%)',
           }}
           transition={{
-            opacity: { duration: 0.3, ease: CINEMATIC, delay: 0.65 },
-            clipPath: { duration: 0.45, ease: CINEMATIC, delay: 0.65 },
+            opacity: { duration: 0.2, ease: CINEMATIC, delay: 0.35 },
+            clipPath: { duration: 0.35, ease: CINEMATIC, delay: 0.35 },
           }}
         >
           n
         </motion.span>
 
-        {/* Light sweep — fixed-width beam for crisp shine on every screen */}
+        {/* ── Dual-layer light sweep ── */}
+        {/* Wide glow layer */}
         <motion.div
           className="absolute top-0 h-full pointer-events-none"
           style={{
-            width: 100,
-            background: 'linear-gradient(90deg, transparent 0%, rgba(170,235,0,0.12) 30%, rgba(255,255,255,0.08) 48%, transparent 70%)',
-            filter: 'blur(6px)',
-            left: -100,
+            width: 200,
+            left: -200,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(34,212,91,0.06) 30%, rgba(255,255,255,0.04) 50%, transparent 75%)',
+            filter: 'blur(10px)',
           }}
           initial={{ opacity: 0 }}
           animate={{
-            x: phase === 'sweep' || phase === 'tagline' ? [0, 500] : 0,
-            opacity: phase === 'sweep' || phase === 'tagline' ? [0, 1, 0.6, 0] : 0,
+            x: phase === 'sweep' || phase === 'tagline' ? [0, 550] : 0,
+            opacity: phase === 'sweep' || phase === 'tagline' ? [0, 1, 0.5, 0] : 0,
           }}
           transition={{
-            x: { duration: 0.8, ease: CINEMATIC },
+            x: { duration: 0.7, ease: CINEMATIC },
             opacity: { duration: 0.5, ease: 'easeInOut' },
+          }}
+        />
+        {/* Sharp core layer */}
+        <motion.div
+          className="absolute top-0 h-full pointer-events-none"
+          style={{
+            width: 60,
+            left: -60,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(34,212,91,0.15) 25%, rgba(170,235,0,0.25) 40%, rgba(255,255,255,0.15) 55%, transparent 80%)',
+            filter: 'blur(3px)',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{
+            x: phase === 'sweep' || phase === 'tagline' ? [0, 550] : 0,
+            opacity: phase === 'sweep' || phase === 'tagline' ? [0, 1, 0.7, 0] : 0,
+          }}
+          transition={{
+            x: { duration: 0.65, ease: CINEMATIC },
+            opacity: { duration: 0.4, ease: 'easeInOut' },
           }}
         />
       </div>
 
-      {/* Electric streak */}
+      {/* ── Electric streak ── */}
       <motion.div
-        className="relative z-10 mt-2 h-px"
+        className="relative z-10 mt-1 h-px"
         style={{ background: 'linear-gradient(90deg, transparent, var(--green), transparent)', width: 280 }}
         initial={{ scaleX: 0, opacity: 0 }}
         animate={{
@@ -260,30 +325,30 @@ export const IntroPage: React.FC = () => {
           opacity: phase === 'curtain' || phase === 'build' ? 0 : phase === 'flash' ? 0.7 : 0.2,
         }}
         transition={{
-          scaleX: { duration: 0.5, ease: CINEMATIC, delay: 0.7 },
-          opacity: { duration: 0.3, ease: 'easeInOut' },
+          scaleX: { duration: 0.35, ease: CINEMATIC, delay: 0.4 },
+          opacity: { duration: 0.2, ease: 'easeInOut' },
         }}
       />
 
-      {/* Tagline */}
+      {/* ── Tagline ── */}
       <AnimatePresence mode="wait">
         {(phase === 'tagline' || phase === 'out') && (
           <motion.div
             key="tagline"
-            className="relative z-10 mt-3 sm:mt-6 flex gap-4 sm:gap-6"
-            initial={{ opacity: 0, y: 12 }}
+            className="relative z-10 mt-1.5 sm:mt-3 flex gap-4 sm:gap-6"
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.5, ease: CINEMATIC }}
+            transition={{ duration: 0.4, ease: CINEMATIC }}
           >
             {['Play.', 'Compete.', 'Conquer.'].map((word, i) => (
               <motion.span
                 key={word}
                 className="text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase select-none block"
                 style={{ color: 'rgba(255,255,255,0.3)' }}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 * i, duration: 0.35, ease: CINEMATIC }}
+                transition={{ delay: 0.1 * i, duration: 0.3, ease: CINEMATIC }}
               >
                 {word}
               </motion.span>
@@ -292,12 +357,12 @@ export const IntroPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Loading dots */}
+      {/* ── Loading dots ── */}
       <motion.div
         className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: phase === 'out' ? 0 : 0.4 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25 }}
       >
         {[0, 1, 2].map(i => (
           <motion.div
@@ -305,7 +370,7 @@ export const IntroPage: React.FC = () => {
             className="w-1.5 h-1.5 rounded-full"
             style={{ background: 'var(--green)' }}
             animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.25 }}
           />
         ))}
       </motion.div>
