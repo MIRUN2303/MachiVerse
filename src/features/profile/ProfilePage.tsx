@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
@@ -708,8 +709,11 @@ const BadgeInfoPopup: React.FC<{
   const rarityCfg = RARITY_CONFIG[cfg.rarity] || RARITY_CONFIG.common;
   const progress = getBadgeProgress(badgeId, user, allEvents);
   const progressPct = Math.min(100, Math.round((progress.current / progress.target) * 100));
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+  useScrollLock(true);
 
-  return (
+  const content = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -853,6 +857,9 @@ const BadgeInfoPopup: React.FC<{
       </motion.div>
     </motion.div>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 };
 
 // =============================================
