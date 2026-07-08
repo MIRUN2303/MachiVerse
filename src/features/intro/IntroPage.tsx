@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../../store/useAppStore';
 
-// Cinematic ease — controlled, no bounce
 const CINEMATIC = [0.22, 1, 0.36, 1] as const;
 
 type Phase = 'curtain' | 'build' | 'flash' | 'sweep' | 'tagline' | 'out';
@@ -17,7 +16,6 @@ export const IntroPage: React.FC = () => {
 
   const target = useMemo(() => (isLoggedIn ? '/home' : '/login'), [isLoggedIn]);
 
-  // Phase progression
   useEffect(() => {
     if (!loaded) return;
     const t = setTimeout(() => setPhase('curtain'), 50);
@@ -46,42 +44,87 @@ export const IntroPage: React.FC = () => {
     <motion.div
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden"
       animate={{ opacity: pageOpacity }}
-      transition={{ duration: 0.35, ease: CINEMATIC }}
+      transition={{ duration: 0.4, ease: CINEMATIC }}
+      style={{ willChange: 'opacity' }}
     >
-      {/* Background image — mobile hidden below sm, desktop visible from sm up */}
+      {/* ── Background image layers ── */}
+      {/* Mobile bg */}
       <motion.div
         className="absolute inset-0 sm:hidden"
-        initial={{ opacity: 0, scale: 1.12 }}
+        initial={{ opacity: 0, scale: 1.15, filter: 'blur(14px)' }}
         animate={{
-          opacity: phase === 'out' ? 0 : 0.5,
-          scale: phase === 'out' ? 1.08 : 1,
+          opacity: phase === 'out' ? 0 : phase === 'curtain' ? 0.45 : 0.5,
+          scale: phase === 'out' ? 1.1 : phase === 'curtain' ? 1.15 : 1,
+          filter: phase === 'out'
+            ? 'blur(10px)'
+            : phase === 'curtain'
+              ? 'blur(14px)'
+              : 'blur(0px)',
         }}
-        transition={{ duration: 1.6, ease: CINEMATIC }}
+        transition={{
+          duration: 1.8,
+          ease: CINEMATIC,
+          scale: { duration: 2.2, ease: CINEMATIC },
+          filter: { duration: 2, ease: CINEMATIC },
+        }}
         style={{
-          backgroundImage: 'url(/intro-bg/mobile.png)',
+          backgroundImage: 'url(/intro-bg/mobile.webp)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          willChange: 'transform, filter, opacity',
         }}
       />
+
+      {/* Desktop bg */}
       <motion.div
         className="absolute inset-0 max-sm:hidden"
-        initial={{ opacity: 0, scale: 1.12 }}
+        initial={{ opacity: 0, scale: 1.15, filter: 'blur(14px)' }}
         animate={{
-          opacity: phase === 'out' ? 0 : 0.5,
-          scale: phase === 'out' ? 1.08 : 1,
+          opacity: phase === 'out' ? 0 : phase === 'curtain' ? 0.45 : 0.5,
+          scale: phase === 'out' ? 1.1 : phase === 'curtain' ? 1.15 : 1,
+          filter: phase === 'out'
+            ? 'blur(10px)'
+            : phase === 'curtain'
+              ? 'blur(14px)'
+              : 'blur(0px)',
         }}
-        transition={{ duration: 1.6, ease: CINEMATIC }}
+        transition={{
+          duration: 1.8,
+          ease: CINEMATIC,
+          scale: { duration: 2.2, ease: CINEMATIC },
+          filter: { duration: 2, ease: CINEMATIC },
+        }}
         style={{
-          backgroundImage: 'url(/intro-bg/desktop.png)',
+          backgroundImage: 'url(/intro-bg/desktop.webp)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          willChange: 'transform, filter, opacity',
         }}
       />
 
-      {/* Dark overlay so text stays readable */}
-      <div className="absolute inset-0" style={{ background: 'rgba(8,8,8,0.55)' }} />
+      {/* ── Gradient overlay — deepens on exit for curtain effect ── */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background: phase === 'out'
+            ? 'radial-gradient(ellipse at center, rgba(8,8,8,0.7) 0%, rgba(8,8,8,0.92) 100%)'
+            : 'radial-gradient(ellipse at center, rgba(8,8,8,0.35) 0%, rgba(8,8,8,0.6) 100%)',
+        }}
+        transition={{ duration: 1.2, ease: CINEMATIC }}
+      />
 
-      {/* Ambient glow — builds from center */}
+      {/* ── Edge vignette that tightens on exit ── */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{
+          boxShadow: phase === 'out'
+            ? 'inset 0 0 120px 60px rgba(8,8,8,0.7)'
+            : 'inset 0 0 60px 20px rgba(8,8,8,0.3)',
+        }}
+        transition={{ duration: 1.4, ease: CINEMATIC }}
+      />
+
+      {/* ── Ambient glow ── */}
       <motion.div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(170,235,0,0.06) 0%, transparent 70%)' }}
@@ -93,7 +136,7 @@ export const IntroPage: React.FC = () => {
         transition={{ duration: 1.2, ease: CINEMATIC }}
       />
 
-      {/* Electric glow ring around logo area */}
+      {/* Electric glow ring */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
         style={{
@@ -112,7 +155,7 @@ export const IntroPage: React.FC = () => {
 
       {/* ===== LOGO ASSEMBLY ===== */}
       <div className="relative z-10 flex items-baseline">
-        {/* "Whos" — clip-path reveal from left */}
+        {/* "Whos" */}
         <motion.span
           className="font-logo text-5xl sm:text-6xl text-white/85 select-none pl-1"
           style={{ letterSpacing: '0.08em' }}
@@ -127,7 +170,7 @@ export const IntroPage: React.FC = () => {
           Whos
         </motion.span>
 
-        {/* "I" — hero character, electric green, snaps in with flash */}
+        {/* "I" */}
         <motion.span
           className="relative inline-block"
           style={{ perspective: 800, marginLeft: 3 }}
@@ -155,7 +198,6 @@ export const IntroPage: React.FC = () => {
           >
             I
           </span>
-          {/* Flash overlay */}
           <motion.div
             className="absolute inset-0 rounded-full"
             style={{ background: 'rgba(170,235,0,0.4)', filter: 'blur(16px)' }}
@@ -168,7 +210,7 @@ export const IntroPage: React.FC = () => {
           />
         </motion.span>
 
-        {/* "n" — slides in from right */}
+        {/* "n" */}
         <motion.span
           className="font-logo text-5xl sm:text-6xl text-white/85 select-none pr-1"
           style={{ letterSpacing: '0.08em' }}
@@ -187,27 +229,28 @@ export const IntroPage: React.FC = () => {
           n
         </motion.span>
 
-        {/* Light sweep overlay — moves across completed logo */}
+        {/* Light sweep — fixed-width beam for crisp shine on every screen */}
         <motion.div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute top-0 h-full pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, transparent 0%, rgba(170,235,0,0.08) 40%, rgba(255,255,255,0.06) 55%, transparent 80%)',
-            filter: 'blur(4px)',
-            mixBlendMode: 'overlay' as const,
+            width: 100,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(170,235,0,0.12) 30%, rgba(255,255,255,0.08) 48%, transparent 70%)',
+            filter: 'blur(6px)',
+            left: -100,
           }}
-          initial={{ x: '-100%', opacity: 0 }}
+          initial={{ opacity: 0 }}
           animate={{
-            x: phase === 'sweep' || phase === 'tagline' ? '200%' : '-100%',
-            opacity: phase === 'sweep' || phase === 'tagline' ? 1 : 0,
+            x: phase === 'sweep' || phase === 'tagline' ? [0, 500] : 0,
+            opacity: phase === 'sweep' || phase === 'tagline' ? [0, 1, 0.6, 0] : 0,
           }}
           transition={{
-            x: { duration: 0.7, ease: CINEMATIC, delay: 0 },
-            opacity: { duration: 0.2, ease: 'easeInOut' },
+            x: { duration: 0.8, ease: CINEMATIC },
+            opacity: { duration: 0.5, ease: 'easeInOut' },
           }}
         />
       </div>
 
-      {/* Electric streak — fast horizontal line below logo */}
+      {/* Electric streak */}
       <motion.div
         className="relative z-10 mt-2 h-px"
         style={{ background: 'linear-gradient(90deg, transparent, var(--green), transparent)', width: 280 }}
@@ -222,12 +265,12 @@ export const IntroPage: React.FC = () => {
         }}
       />
 
-      {/* ===== TAGLINE: "Play. Compete. Conquer." ===== */}
+      {/* Tagline */}
       <AnimatePresence mode="wait">
         {(phase === 'tagline' || phase === 'out') && (
           <motion.div
             key="tagline"
-            className="relative z-10 mt-6 flex gap-4 sm:gap-6"
+            className="relative z-10 mt-3 sm:mt-6 flex gap-4 sm:gap-6"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -249,7 +292,7 @@ export const IntroPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Loading dots at bottom */}
+      {/* Loading dots */}
       <motion.div
         className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex gap-2"
         initial={{ opacity: 0 }}
