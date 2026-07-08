@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAppStore } from '../../store/useAppStore';
@@ -6,30 +6,44 @@ import { supabase } from '../../lib/supabase';
 import { Iconic } from '../../components/ui/icons';
 import toast from 'react-hot-toast';
 
+const countryCodes = [
+  { code: '+91', label: 'IN +91' },
+  { code: '+1', label: 'US +1' },
+  { code: '+44', label: 'UK +44' },
+  { code: '+61', label: 'AU +61' },
+  { code: '+971', label: 'AE +971' },
+  { code: '+65', label: 'SG +65' },
+  { code: '+852', label: 'HK +852' },
+  { code: '+86', label: 'CN +86' },
+  { code: '+81', label: 'JP +81' },
+  { code: '+82', label: 'KR +82' },
+];
+
 export const CompleteProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const currentUserId = useAppStore(s => s.currentUserId);
   const users = useAppStore(s => s.users);
   const setNeedsPhone = useAppStore(s => s.setNeedsPhone);
+  const [cc, setCc] = useState('+91');
   const [phone, setPhone] = useState('');
+  const [ccOpen, setCcOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const ccRef = useRef<HTMLDivElement>(null);
 
   const user = users.find((u: any) => u.id === currentUserId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) {
-      toast.error('Phone number is required');
-      return;
-    }
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) { toast.error('Enter a valid 10-digit phone number'); return; }
+    const fullPhone = cc + digits;
     setLoading(true);
     try {
-      const { error } = await supabase.from('users').update({ phone: phone.trim() }).eq('id', currentUserId);
+      const { error } = await supabase.from('users').update({ phone: fullPhone }).eq('id', currentUserId);
       if (error) throw error;
-      // Update local user in store
       setNeedsPhone(false);
       useAppStore.setState(s => ({
-        users: s.users.map((u: any) => u.id === currentUserId ? { ...u, phone: phone.trim() } : u),
+        users: s.users.map((u: any) => u.id === currentUserId ? { ...u, phone: fullPhone } : u),
       }));
       toast.success('Profile updated!');
       navigate('/home', { replace: true });
@@ -39,6 +53,14 @@ export const CompleteProfilePage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ccRef.current && !ccRef.current.contains(e.target as Node)) setCcOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080808' }}>

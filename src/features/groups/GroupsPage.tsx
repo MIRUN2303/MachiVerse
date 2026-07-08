@@ -6,6 +6,7 @@ import { getUserById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupE
 import { Card, Avatar, Badge, Button, SectionHeader } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
+import { FAB } from '../../components/layout/Navigation';
 import { clsx } from 'clsx';
 import { useAppStore } from '../../store/useAppStore';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
@@ -939,6 +940,7 @@ export const GroupsPage: React.FC = () => {
       )}
 
       <CreateGroupModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <FAB onClick={() => setShowCreate(true)} />
     </div>
   );
 };

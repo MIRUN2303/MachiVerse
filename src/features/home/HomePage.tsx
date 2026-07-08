@@ -7,6 +7,7 @@ import { SPORT_CONFIG } from '../../data/sportConfig';
 import { Avatar, Button, StatCard, SportOrb, SectionHeader } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
+import { FAB } from '../../components/layout/Navigation';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
 import type { Event } from '../../data/types';
 
@@ -455,6 +456,7 @@ export const HomePage: React.FC = () => {
 
       {/* Create Event Sheet */}
       <CreateEventSheet isOpen={showCreate} onClose={() => setShowCreate(false)} initialMode="live" />
+      <FAB onClick={() => setShowCreate(true)} />
     </div>
   );
  };
