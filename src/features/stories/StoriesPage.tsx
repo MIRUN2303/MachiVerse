@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../../store/useAppStore';
-import { Avatar } from '../../components/ui';
+import { Avatar, ConfirmModal } from '../../components/ui';
 import { FadeUp } from '../../components/motion';
 
 export const StoriesPage: React.FC = () => {
@@ -52,7 +52,7 @@ export const StoriesPage: React.FC = () => {
             <div className="relative w-16 h-16 flex-shrink-0">
               <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-dashed" style={{ borderColor: 'rgba(var(--green-rgb),0.4)' }}>
                 {myStories.length > 0 ? (
-                  <img src={myStories[myStories.length - 1].imageUrl} alt="" className="w-full h-full object-cover"
+                  <img src={myStories[myStories.length - 1].imageUrl} alt="" className="w-full h-full object-cover rounded-full"
                     onClick={e => { e.stopPropagation(); setStoryViewer({ user: currentUser, stories: myStories, idx: 0 }); }} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-lg" style={{ background: 'rgba(var(--green-rgb),0.08)' }}>+</div>
@@ -149,8 +149,11 @@ export const StoriesPage: React.FC = () => {
 // STORY VIEWER POPUP
 // =============================================
 const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number; onClose: () => void }> = ({ user, stories, initialIdx, onClose }) => {
+  const currentUserId = useAppStore(s => s.currentUserId);
+  const deleteStory = useAppStore(s => s.deleteStory);
   const [idx, setIdx] = useState(initialIdx);
   const [progress, setProgress] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     setProgress(0);
@@ -183,10 +186,18 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
   const goNext = () => { if (idx < stories.length - 1) { setIdx(i => i + 1); setProgress(0); } else onClose(); };
   const goPrev = () => { if (idx > 0) { setIdx(i => i - 1); setProgress(0); } };
 
+  const handleDelete = () => {
+    const storyId = stories[idx]?.id;
+    if (storyId) { deleteStory(storyId); onClose(); }
+  };
+
+  const isOwn = user?.id === currentUserId;
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-black"
+      className="fixed inset-0 z-[100]"
+      style={{ background: '#000' }}
       onClick={goNext}
     >
       {/* Progress bars */}
@@ -201,20 +212,31 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
         ))}
       </div>
 
-      {/* Close button */}
-      <button onClick={e => { e.stopPropagation(); onClose(); }} className="absolute top-4 right-4 z-10 text-white/60 text-xl">✕</button>
-
-      {/* User info */}
-      <div className="absolute top-6 left-4 z-10 flex items-center gap-2">
-        {user && <Avatar src={user.avatar} name={user.name} size="sm" />}
-        <span className="text-xs font-semibold text-white">{user?.name}</span>
+      {/* Top bar: user info left, close+delete right */}
+      <div className="absolute top-6 left-4 right-4 z-10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {user && <Avatar src={user.avatar} name={user.name} size="sm" />}
+          <span className="text-xs font-semibold text-white">{user?.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isOwn && (
+            <button onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+              className="text-white/50 hover:text-red-400 transition-colors p-1" title="Delete story">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          )}
+          <button onClick={e => { e.stopPropagation(); onClose(); }} className="text-white/60 text-xl">✕</button>
+        </div>
       </div>
 
-      {/* Full-screen image */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black">
+      {/* Full-screen image — object-contain so full image visible, black bars for empty space */}
+      <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#000' }}>
         <img src={stories[idx]?.imageUrl} alt=""
-          className="w-full h-full object-cover" onClick={e => e.stopPropagation()} />
-        {/* Bottom gradient overlay */}
+          className="w-full h-full" style={{ objectFit: 'contain' }}
+          onClick={e => e.stopPropagation()} />
+        {/* Bottom gradient overlay for caption readability */}
         <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
           style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.6))' }} />
       </div>
@@ -232,6 +254,17 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
           <p className="text-white/90 text-sm drop-shadow-lg">{stories[idx].caption}</p>
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <ConfirmModal
+        open={confirmDelete}
+        title="Delete Story"
+        message="This will permanently remove this story. Your friends won't be able to see it."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => { setConfirmDelete(false); handleDelete(); }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </motion.div>
   );
 };

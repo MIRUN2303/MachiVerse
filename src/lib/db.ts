@@ -484,6 +484,11 @@ export async function createStoryInDb(story: Story): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteStoryFromDb(storyId: string): Promise<void> {
+  const { error } = await supabase.from('stories').delete().eq('id', storyId);
+  if (error) throw error;
+}
+
 export async function getTodayStoryCount(userId: string): Promise<number> {
   const today = new Date().toISOString().split('T')[0];
   const { count, error } = await supabase

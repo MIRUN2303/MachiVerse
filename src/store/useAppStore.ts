@@ -264,6 +264,7 @@ interface AppState {
   sendFriendRequest: (friendId: string) => void;
   acceptFriendRequest: (friendshipId: string) => void;
   uploadStory: (imageUrl: string, caption?: string) => void;
+  deleteStory: (storyId: string) => void;
   getActiveStories: (userId: string) => Story[];
   getFriendsWithStories: () => { user: any; stories: Story[] }[];
   uploadEventImage: (eventId: string, imageUrl: string) => void;
@@ -977,6 +978,16 @@ export const useAppStore = create<AppState>()(
           console.warn('Failed to save story to DB', e);
         }
         toast.success('Story uploaded!');
+      },
+
+      deleteStory: async (storyId) => {
+        set(s => ({ stories: s.stories.filter(st => st.id !== storyId) }));
+        try {
+          await db.deleteStoryFromDb(storyId);
+          toast.success('Story deleted');
+        } catch (e) {
+          console.warn('Failed to delete story from DB', e);
+        }
       },
 
       getActiveStories: (userId) => {
