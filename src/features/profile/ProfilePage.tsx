@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { SPORT_CONFIG, BADGE_CONFIG } from '../../data/sportConfig';
@@ -39,6 +39,7 @@ export const ProfilePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [inviteGroupId, setInviteGroupId] = useState('');
+  const [badgeInfo, setBadgeInfo] = useState<{ id: string; cfg: any; earned: boolean } | null>(null);
 
   const friendships = useAppStore(s => s.friendships);
   const sendFriendRequest = useAppStore(s => s.sendFriendRequest);
@@ -407,35 +408,59 @@ export const ProfilePage: React.FC = () => {
               const earned = user.badges.includes(id as any);
               const rarityCfg = RARITY_CONFIG[cfg.rarity] || RARITY_CONFIG.common;
               return (
-                <motion.div
+                <motion.button
                   key={id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl p-4 text-center relative overflow-hidden"
+                  onClick={() => setBadgeInfo({ id, cfg, earned })}
+                  className="rounded-2xl p-4 text-center relative overflow-hidden w-full text-left"
                   style={{
                     background: earned
-                      ? `linear-gradient(135deg, ${rarityCfg.color}15, ${rarityCfg.color}08)`
+                      ? `linear-gradient(135deg, ${rarityCfg.color}18, ${rarityCfg.color}08)`
                       : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${earned ? rarityCfg.color + '40' : 'rgba(255,255,255,0.04)'}`,
-                    opacity: earned ? 1 : 0.35,
+                    border: `1px solid ${earned ? rarityCfg.color + '50' : 'rgba(255,255,255,0.06)'}`,
                   }}
                 >
-                  {earned && (
+                  {/* Rarity tag (earned) or lock badge (locked) */}
+                  {earned ? (
                     <div className="absolute top-2 right-2">
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: rarityCfg.color + '20', color: rarityCfg.color }}>
                         {rarityCfg.label}
                       </span>
                     </div>
+                  ) : (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+                        🔒 Locked
+                      </span>
+                    </div>
                   )}
-                  <div className="text-3xl mb-2">{cfg.emoji}</div>
+                  {/* Emoji */}
+                  <div className="text-3xl mb-2" style={{ filter: earned ? 'none' : 'grayscale(0.8) opacity(0.5)' }}>
+                    {cfg.emoji}
+                  </div>
                   <p className="font-bold text-xs text-white">{cfg.label}</p>
                   <p className="text-[10px] text-white/40 mt-0.5">{cfg.description}</p>
-                </motion.div>
+                </motion.button>
               );
             })}
           </div>
         </div>
       )}
+
+      {/* BADGE INFO POPUP */}
+      <AnimatePresence>
+        {badgeInfo && (
+          <BadgeInfoPopup
+            badgeId={badgeInfo.id}
+            cfg={badgeInfo.cfg}
+            earned={badgeInfo.earned}
+            user={user}
+            allEvents={Array.from(useAppStore.getState().events)}
+            onClose={() => setBadgeInfo(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ===== FRIENDS TAB ===== */}
       {tab === 'Friends' && (
@@ -635,5 +660,155 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// =============================================
+// BADGE CRITERIA & PROGRESS
+// =============================================
+const BADGE_CRITERIA: Record<string, string> = {
+  first_match: 'Play your first match',
+  first_win: 'Win your first match',
+  weekend_warrior: 'Attend matches on 5 different weekends',
+  five_wins: 'Win 5 matches total',
+  ten_wins: 'Win 10 matches total',
+  twentyfive_wins: 'Win 25 matches total',
+  hundred_wins: 'Win 100 matches total',
+  full_attendance: 'Maintain 100% attendance for 3+ events',
+  captain: 'Organize 10 events as a creator',
+  iron_player: 'Maintain 100% attendance for 8+ events',
+  mvp: 'Be awarded MVP in 1+ events',
+  longest_streak: 'Win 7 matches in a row',
+};
+
+function getBadgeProgress(badgeId: string, user: any, allEvents: any[]): { current: number; target: number } {
+  const s = user.stats;
+  const organizedCount = allEvents.filter((e: any) => e.organizer === user.id).length;
+  switch (badgeId) {
+    case 'first_match': return { current: s.totalMatches, target: 1 };
+    case 'first_win': return { current: s.wins, target: 1 };
+    case 'weekend_warrior': return { current: Math.min(s.totalMatches, 5), target: 5 };
+    case 'five_wins': return { current: Math.min(s.wins, 5), target: 5 };
+    case 'ten_wins': return { current: Math.min(s.wins, 10), target: 10 };
+    case 'twentyfive_wins': return { current: Math.min(s.wins, 25), target: 25 };
+    case 'hundred_wins': return { current: Math.min(s.wins, 100), target: 100 };
+    case 'full_attendance': return { current: s.attendanceRate === 100 ? s.totalMatches : 0, target: 3 };
+    case 'captain': return { current: Math.min(organizedCount, 10), target: 10 };
+    case 'iron_player': return { current: s.attendanceRate === 100 ? s.totalMatches : 0, target: 8 };
+    case 'mvp': return { current: Math.min(s.mvpCount, 1), target: 1 };
+    case 'longest_streak': return { current: Math.min(s.longestStreak, 7), target: 7 };
+    default: return { current: 0, target: 1 };
+  }
+}
+
+// =============================================
+// BADGE INFO POPUP
+// =============================================
+const BadgeInfoPopup: React.FC<{
+  badgeId: string;
+  cfg: any;
+  earned: boolean;
+  user: any;
+  allEvents: any[];
+  onClose: () => void;
+}> = ({ badgeId, cfg, earned, user, allEvents, onClose }) => {
+  const rarityCfg = RARITY_CONFIG[cfg.rarity] || RARITY_CONFIG.common;
+  const progress = getBadgeProgress(badgeId, user, allEvents);
+  const progressPct = Math.min(100, Math.round((progress.current / progress.target) * 100));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        className="w-full max-w-sm rounded-3xl p-6 relative overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${rarityCfg.color}12, #141414)`,
+          border: `1px solid ${rarityCfg.color}30`,
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.15)' }} />
+
+        {/* Close button */}
+        <button onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all"
+          style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+
+        {/* Badge emoji */}
+        <div className="text-5xl text-center mb-3">{cfg.emoji}</div>
+
+        {/* Owned/Locked badge */}
+        <div className="text-center mb-3">
+          {earned ? (
+            <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full"
+              style={{ background: rarityCfg.color + '20', color: rarityCfg.color, border: `1px solid ${rarityCfg.color}40` }}>
+              ✓ You own this badge
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              🔒 Locked
+            </span>
+          )}
+        </div>
+
+        {/* Title & rarity */}
+        <h3 className="font-display font-bold text-lg text-white text-center">{cfg.label}</h3>
+        <p className="text-center text-xs mt-1" style={{ color: rarityCfg.color }}>{rarityCfg.label}</p>
+
+        {/* Description */}
+        <p className="text-center text-sm text-white/50 mt-3 leading-relaxed">{cfg.description}</p>
+
+        {/* Criteria */}
+        <div className="mt-4 glass rounded-2xl p-3.5">
+          <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">How to unlock</p>
+          <p className="text-xs text-white/70">{BADGE_CRITERIA[badgeId] || cfg.description}</p>
+
+          {/* Progress bar */}
+          {!earned && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-white/30">Progress</span>
+                <span className="text-[10px] font-semibold" style={{ color: rarityCfg.color }}>
+                  {progress.current} / {progress.target}
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  style={{ background: rarityCfg.color, boxShadow: `0 0 8px ${rarityCfg.color}60` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Owned confirmation extra */}
+          {earned && (
+            <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-[10px] text-white/40 flex items-center gap-1">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Unlocked on {new Date().toLocaleDateString()}
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };

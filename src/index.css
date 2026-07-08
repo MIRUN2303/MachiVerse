@@ -229,6 +229,11 @@ body {
   align-items: center;
   gap: 0.35rem;
 }
+.section-title > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .section-title::after {
   content: '';
   position: absolute;
