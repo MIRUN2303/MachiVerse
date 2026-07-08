@@ -1,7 +1,7 @@
 import { supabase, supabaseNoAuth } from './supabase';
 import type {
   User, Group, GroupMember, Event, League, Team, Match,
-  AttendanceRecord, Notification, Friendship, Story, JoinRequest,
+  AttendanceRecord, Notification, Friendship, Story, JoinRequest, AppRequest,
 } from '../data/types';
 
 // =============================================
@@ -491,6 +491,83 @@ export async function markNotificationReadInDb(id: string): Promise<void> {
 export async function markAllNotificationsReadInDb(): Promise<void> {
   const { error } = await supabaseNoAuth.from('notifications').update({ read: true }).neq('id', '');
   if (error) throw error;
+}
+
+// =============================================
+// REQUESTS (centralized request system)
+// =============================================
+export async function fetchRequests(): Promise<AppRequest[]> {
+  const { data, error } = await supabaseNoAuth.from('requests').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapRequestRow);
+}
+
+export async function fetchPendingRequestsForUser(userId: string): Promise<AppRequest[]> {
+  const { data, error } = await supabaseNoAuth
+    .from('requests')
+    .select('*')
+    .eq('recipient_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapRequestRow);
+}
+
+export async function fetchSentRequests(userId: string): Promise<AppRequest[]> {
+  const { data, error } = await supabaseNoAuth
+    .from('requests')
+    .select('*')
+    .eq('sender_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapRequestRow);
+}
+
+export async function createRequestInDb(req: AppRequest): Promise<void> {
+  const { error } = await supabaseNoAuth.from('requests').insert({
+    id: req.id,
+    sender_id: req.senderId,
+    recipient_id: req.recipientId,
+    request_type: req.requestType,
+    status: req.status,
+    related_entity_id: req.relatedEntityId || null,
+    metadata: req.metadata || {},
+    created_at: req.createdAt,
+    updated_at: req.updatedAt,
+  });
+  if (error) throw error;
+}
+
+export async function updateRequestStatusInDb(id: string, status: string): Promise<void> {
+  const { error } = await supabaseNoAuth.from('requests').update({ status, updated_at: now() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function checkDuplicatePendingRequest(senderId: string, recipientId: string, requestType: string): Promise<boolean> {
+  const { data, error } = await supabaseNoAuth
+    .from('requests')
+    .select('id')
+    .eq('sender_id', senderId)
+    .eq('recipient_id', recipientId)
+    .eq('request_type', requestType)
+    .eq('status', 'pending')
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+function mapRequestRow(r: any): AppRequest {
+  return {
+    id: r.id,
+    senderId: r.sender_id,
+    recipientId: r.recipient_id,
+    requestType: r.request_type,
+    status: r.status,
+    relatedEntityId: r.related_entity_id || null,
+    metadata: r.metadata || {},
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
 }
 
 // =============================================

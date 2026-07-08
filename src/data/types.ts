@@ -229,6 +229,36 @@ export interface Notification {
 }
 
 // =============================================
+// CENTRALIZED REQUESTS
+// =============================================
+export type RequestType =
+  | 'friend_request'
+  | 'group_invite'
+  | 'team_invite'
+  | 'event_invite'
+  | 'tournament_invite'
+  | 'match_invite'
+  | 'group_join_request'
+  | 'team_join_request'
+  | 'organization_invite'
+  | 'admin_invite'
+  | 'collaboration_request';
+
+export type RequestStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+
+export interface AppRequest {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  requestType: RequestType;
+  status: RequestStatus;
+  relatedEntityId: string | null;
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================
 // FRIENDS & STORIES
 // =============================================
 export type FriendRequestStatus = 'pending' | 'accepted' | 'declined';

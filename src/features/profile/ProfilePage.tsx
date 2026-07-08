@@ -916,8 +916,9 @@ const InviteToGroupPopup: React.FC<{ myGroups: any[]; onClose: () => void }> = (
   const handleInvite = () => {
     if (!selectedGroupId) { toast.error('Select a group'); return; }
     if (!inviteCodeInput.trim()) { toast.error('Enter a profile code'); return; }
-    const ok = inviteByProfileCode(selectedGroupId, inviteCodeInput.trim());
-    if (ok) { setInviteCodeInput(''); onClose(); }
+    inviteByProfileCode(selectedGroupId, inviteCodeInput.trim()).then(() => {
+      setInviteCodeInput(''); onClose();
+    });
   };
 
   useScrollLock(true);

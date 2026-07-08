@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory, BadgeId, JoinRequest } from '../data/types';
+import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory, BadgeId, JoinRequest, AppRequest, RequestStatus } from '../data/types';
 
 import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
+import { supabase } from '../lib/supabase';
+
+let _requestChannel: ReturnType<typeof supabase.channel> | null = null;
 
 function dbError(label: string) {
   return (e: any) => toast.error(label + ': ' + (e?.message || e));
@@ -258,7 +261,7 @@ interface AppState {
   createGroup: (input: CreateGroupInput) => string;
   generateInviteCode: () => string;
   joinGroup: (groupId: string) => void;
-  inviteByProfileCode: (groupId: string, profileCode: string) => boolean;
+  inviteByProfileCode: (groupId: string, profileCode: string) => Promise<boolean>;
   updateGroupDetails: (groupId: string, updates: Partial<Pick<Group, 'name' | 'description' | 'rules'>>) => void;
   updateMemberRole: (groupId: string, userId: string, role: 'admin' | 'member') => void;
   deleteGroup: (groupId: string) => void;
@@ -269,6 +272,12 @@ interface AppState {
   sendJoinRequest: (groupId: string) => void;
   acceptJoinRequest: (requestId: string) => void;
   rejectJoinRequest: (requestId: string) => void;
+
+  // Centralized requests
+  requests: AppRequest[];
+  acceptRequest: (requestId: string) => void;
+  declineRequest: (requestId: string) => void;
+  cancelRequest: (requestId: string) => void;
 
   stories: Story[];
   friendships: Friendship[];
@@ -305,6 +314,7 @@ export const useAppStore = create<AppState>()(
       stories: [],
       friendships: [],
       joinRequests: [],
+      requests: [],
 
       loadFromSupabase: async () => {
         try {
@@ -313,13 +323,14 @@ export const useAppStore = create<AppState>()(
           const authUser = session?.user ?? null;
 
           // 2. Fetch all data from Supabase tables
-          const [events, groups, notifications, friendships, joinRequests, stories] = await Promise.all([
+          const [events, groups, notifications, friendships, joinRequests, stories, requests] = await Promise.all([
             db.fetchEvents().catch(() => []),
             db.fetchGroups().catch(() => []),
             db.fetchNotifications().catch(() => []),
             db.fetchFriendships().catch(() => []),
             db.fetchJoinRequests().catch(() => []),
             db.fetchStories().catch(() => []),
+            db.fetchRequests().catch(() => []),
           ]);
           const users = await db.fetchUsers().catch(() => []);
 
@@ -351,8 +362,49 @@ export const useAppStore = create<AppState>()(
           // isLoggedIn = !!session, not !!currentUserId — DB failure won't log the user out
           const isLoggedIn = !!authUser;
           const needsPhone = isLoggedIn && (!currentUser || !currentUser.phone);
-          set({ events, groups, notifications, friendships, joinRequests, stories, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
+          set({ events, groups, notifications, friendships, joinRequests, stories, requests, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
           computeAllUserStats(events, set, get);
+
+          // Set up realtime subscription for requests
+          if (isLoggedIn && currentUserId) {
+            // Clean up previous subscription
+            if (_requestChannel) {
+              supabase.removeChannel(_requestChannel);
+              _requestChannel = null;
+            }
+            _requestChannel = supabase.channel('requests-realtime')
+              .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'requests', filter: `recipient_id=eq.${currentUserId}` },
+                (payload: any) => {
+                  const newReq = payload.new;
+                  set(s => {
+                    if (s.requests.some(r => r.id === newReq.id)) return s;
+                    const appReq: AppRequest = {
+                      id: newReq.id, senderId: newReq.sender_id, recipientId: newReq.recipient_id,
+                      requestType: newReq.request_type, status: newReq.status,
+                      relatedEntityId: newReq.related_entity_id || null,
+                      metadata: newReq.metadata || {},
+                      createdAt: newReq.created_at, updatedAt: newReq.updated_at,
+                    };
+                    return { requests: [appReq, ...s.requests] };
+                  });
+                }
+              )
+              .on('postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'requests', filter: `recipient_id=eq.${currentUserId}` },
+                (payload: any) => {
+                  const updated = payload.new;
+                  set(s => ({
+                    requests: s.requests.map(r =>
+                      r.id === updated.id
+                        ? { ...r, status: updated.status, updatedAt: updated.updated_at }
+                        : r
+                    ),
+                  }));
+                }
+              )
+              .subscribe();
+          }
         } catch (e) {
           console.warn('Supabase load failed, using empty state', e)
           // Preserve existing isLoggedIn so a network hiccup doesn't log the user out
@@ -427,11 +479,15 @@ export const useAppStore = create<AppState>()(
 
       logout: async () => {
         try {
+          if (_requestChannel) {
+            supabase.removeChannel(_requestChannel);
+            _requestChannel = null;
+          }
           await auth.signOut();
         } catch (e: any) {
           console.warn('Sign out error', e)
         }
-        set({ isLoggedIn: false, currentUserId: null, needsPhone: false, users: [] });
+        set({ isLoggedIn: false, currentUserId: null, needsPhone: false, users: [], requests: [] });
       },
 
       // ---- EVENTS ----
@@ -879,7 +935,7 @@ export const useAppStore = create<AppState>()(
         toast.success(`Joined "${group.name}"!`);
       },
 
-      inviteByProfileCode: (groupId, profileCode) => {
+      inviteByProfileCode: async (groupId, profileCode) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return false;
         const user = get().users.find((u: any) => u.id === currentUserId);
@@ -892,6 +948,22 @@ export const useAppStore = create<AppState>()(
         if (invitedUser.id === currentUserId) { toast.error("Can't invite yourself"); return false; }
         if (invitedUser.joinedGroups.length >= 3) { toast.error('User has reached their join limit (3)'); return false; }
         if (invitedUser.joinedGroups.includes(groupId) || invitedUser.createdGroups.includes(groupId)) { toast.error('User is already a member'); return false; }
+
+        // Check for duplicate pending invite
+        const exists = await db.checkDuplicatePendingRequest(currentUserId, invitedUser.id, 'group_invite').catch(() => false);
+        if (exists) { toast.error('Invite already sent'); return false; }
+
+        // Create centralized request
+        const now = new Date().toISOString();
+        const reqId = `req_${Date.now()}`;
+        const request: AppRequest = {
+          id: reqId, senderId: currentUserId, recipientId: invitedUser.id,
+          requestType: 'group_invite', status: 'pending',
+          relatedEntityId: groupId, metadata: { groupName: group.name },
+          createdAt: now, updatedAt: now,
+        };
+        set(s => ({ requests: [...s.requests, request] }));
+        db.createRequestInDb(request).catch(dbError('Failed to save request'));
 
         get().addNotification({
           title: 'Group Invite',
@@ -926,6 +998,20 @@ export const useAppStore = create<AppState>()(
         db.updateGroup(groupId, { member_count: group.memberCount }).catch(dbError('Failed to update group'));
         db.addGroupMember({ group_id: groupId, user_id: invitedUser.id, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
           .catch(dbError('Failed to add group member'));
+
+        // Update matching request
+        const req = get().requests.find(
+          r => r.requestType === 'group_invite' && r.status === 'pending'
+            && r.recipientId === currentUserId && r.relatedEntityId === groupId
+        );
+        if (req) {
+          set(s => ({
+            requests: s.requests.map(r =>
+              r.id === req.id ? { ...r, status: 'accepted' as RequestStatus, updatedAt: new Date().toISOString() } : r
+            ),
+          }));
+          db.updateRequestStatusInDb(req.id, 'accepted').catch(() => {});
+        }
 
         if (inviterId) {
           get().addNotification({
@@ -1017,13 +1103,22 @@ export const useAppStore = create<AppState>()(
         return get().groups.find(g => g.inviteCode === code);
       },
 
-      sendJoinRequest: (groupId) => {
+      sendJoinRequest: async (groupId) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
         const group = get().groups.find(g => g.id === groupId);
         if (!group) { toast.error('Group not found'); return; }
         const existing = get().joinRequests.find(r => r.groupId === groupId && r.userId === currentUserId && r.status === 'pending');
         if (existing) { toast.error('Request already sent'); return; }
+
+        // Check duplicate in centralized requests
+        const adminMember = group.members.find(m => m.role === 'creator' || m.role === 'admin');
+        const adminId = adminMember?.userId;
+        if (adminId) {
+          const dup = await db.checkDuplicatePendingRequest(currentUserId, adminId, 'group_join_request').catch(() => false);
+          if (dup) { toast.error('Request already sent'); return; }
+        }
+
         const id = `jr_${Date.now()}`;
         const now = new Date().toISOString();
         const request: JoinRequest = { id, groupId, userId: currentUserId, status: 'pending', createdAt: now, updatedAt: now };
@@ -1031,7 +1126,19 @@ export const useAppStore = create<AppState>()(
 
         db.createJoinRequestInDb(request).catch(dbError('Failed to save join request'));
 
-        const adminMember = group.members.find(m => m.role === 'creator' || m.role === 'admin');
+        // Create centralized request entry
+        if (adminId) {
+          const reqId = `req_${Date.now()}`;
+          const centralReq: AppRequest = {
+            id: reqId, senderId: currentUserId, recipientId: adminId,
+            requestType: 'group_join_request', status: 'pending',
+            relatedEntityId: groupId, metadata: { groupName: group.name },
+            createdAt: now, updatedAt: now,
+          };
+          set(s => ({ requests: [...s.requests, centralReq] }));
+          db.createRequestInDb(centralReq).catch(dbError('Failed to save request'));
+        }
+
         if (adminMember) {
           const requester = get().users.find((u: any) => u.id === currentUserId);
           get().addNotification({
@@ -1056,6 +1163,22 @@ export const useAppStore = create<AppState>()(
           ),
         }));
         db.updateJoinRequestInDb(requestId, { status: 'accepted', updated_at: now }).catch(dbError('Failed to update join request'));
+
+        // Update centralized request
+        const currentUserId = get().currentUserId;
+        const centralReq = get().requests.find(
+          r => r.requestType === 'group_join_request' && r.status === 'pending'
+            && r.relatedEntityId === request.groupId && r.senderId === request.userId
+            && r.recipientId === currentUserId
+        );
+        if (centralReq) {
+          set(s => ({
+            requests: s.requests.map(r =>
+              r.id === centralReq.id ? { ...r, status: 'accepted' as RequestStatus, updatedAt: now } : r
+            ),
+          }));
+          db.updateRequestStatusInDb(centralReq.id, 'accepted').catch(() => {});
+        }
 
         const group = get().groups.find(g => g.id === request.groupId);
         if (!group) return;
@@ -1094,14 +1217,109 @@ export const useAppStore = create<AppState>()(
         toast.success('Join request rejected');
       },
 
+      // ---- CENTRALIZED REQUESTS ----
+      acceptRequest: async (requestId) => {
+        const req = get().requests.find(r => r.id === requestId);
+        if (!req) return;
+        const type = req.requestType;
+
+        if (type === 'friend_request') {
+          // Find matching friendship and accept it
+          const friendship = get().friendships.find(
+            f => f.status === 'pending' && (
+              (f.userId === req.senderId && f.friendId === req.recipientId) ||
+              (f.userId === req.recipientId && f.friendId === req.senderId)
+            )
+          );
+          if (friendship) {
+            set(s => ({
+              friendships: s.friendships.map(f =>
+                f.id === friendship.id ? { ...f, status: 'accepted' as const, updatedAt: new Date().toISOString() } : f
+              ),
+            }));
+            db.updateFriendshipInDb(friendship.id, { status: 'accepted', updated_at: new Date().toISOString() })
+              .catch(dbError('Failed to accept friendship'));
+          }
+        } else if (type === 'group_invite') {
+          const groupId = req.relatedEntityId;
+          const inviterId = req.senderId;
+          if (groupId && inviterId) {
+            get().acceptGroupInvite(groupId, inviterId);
+          }
+        } else if (type === 'group_join_request') {
+          // Accept join request — create membership
+          const groupId = req.relatedEntityId;
+          const requesterId = req.senderId;
+          if (groupId && requesterId) {
+            const joinReq = get().joinRequests.find(
+              jr => jr.groupId === groupId && jr.userId === requesterId && jr.status === 'pending'
+            );
+            if (joinReq) {
+              get().acceptJoinRequest(joinReq.id);
+            }
+          }
+        }
+
+        // Update request status
+        set(s => ({
+          requests: s.requests.map(r =>
+            r.id === requestId ? { ...r, status: 'accepted' as RequestStatus, updatedAt: new Date().toISOString() } : r
+          ),
+        }));
+        db.updateRequestStatusInDb(requestId, 'accepted').catch(dbError('Failed to accept request'));
+        toast.success('Request accepted');
+      },
+
+      declineRequest: async (requestId) => {
+        const req = get().requests.find(r => r.id === requestId);
+        if (!req) return;
+
+        set(s => ({
+          requests: s.requests.map(r =>
+            r.id === requestId ? { ...r, status: 'declined' as RequestStatus, updatedAt: new Date().toISOString() } : r
+          ),
+        }));
+        db.updateRequestStatusInDb(requestId, 'declined').catch(dbError('Failed to decline request'));
+
+        if (req.requestType === 'group_invite') {
+          get().declineGroupInvite();
+        }
+
+        toast.success('Request declined');
+      },
+
+      cancelRequest: async (requestId) => {
+        set(s => ({
+          requests: s.requests.filter(r => r.id !== requestId),
+        }));
+        db.updateRequestStatusInDb(requestId, 'cancelled').catch(dbError('Failed to cancel request'));
+        toast.success('Request cancelled');
+      },
+
       // ---- FRIENDS ----
-      sendFriendRequest: (friendId) => {
-        const id = `fs_${Date.now()}`;
+      sendFriendRequest: async (friendId) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return;
-        const friendship: Friendship = { id, userId: currentUserId, friendId, status: 'pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+
+        // Check for duplicate pending request
+        const exists = await db.checkDuplicatePendingRequest(currentUserId, friendId, 'friend_request').catch(() => false);
+        if (exists) { toast.error('Friend request already sent'); return; }
+
+        const id = `fs_${Date.now()}`;
+        const now = new Date().toISOString();
+        const friendship: Friendship = { id, userId: currentUserId, friendId, status: 'pending', createdAt: now, updatedAt: now };
         set(s => ({ friendships: [...s.friendships, friendship] }));
         db.createFriendshipInDb(friendship).catch(dbError('Failed to save friendship'));
+
+        // Create centralized request entry
+        const reqId = `req_${Date.now()}`;
+        const request: AppRequest = {
+          id: reqId, senderId: currentUserId, recipientId: friendId,
+          requestType: 'friend_request', status: 'pending',
+          relatedEntityId: null, metadata: {}, createdAt: now, updatedAt: now,
+        };
+        set(s => ({ requests: [...s.requests, request] }));
+        db.createRequestInDb(request).catch(dbError('Failed to save request'));
 
         const friend = get().users.find((u: any) => u.id === friendId);
         const requester = get().users.find((u: any) => u.id === currentUserId);
@@ -1124,14 +1342,47 @@ export const useAppStore = create<AppState>()(
         }));
         db.updateFriendshipInDb(friendshipId, { status: 'accepted', updated_at: new Date().toISOString() })
           .catch(dbError('Failed to accept friendship'));
+
+        // Update matching centralized request
+        const friendship = get().friendships.find(f => f.id === friendshipId);
+        if (friendship) {
+          const req = get().requests.find(
+            r => r.requestType === 'friend_request' && r.status === 'pending'
+              && ((r.senderId === friendship.userId && r.recipientId === friendship.friendId)
+               || (r.senderId === friendship.friendId && r.recipientId === friendship.userId))
+          );
+          if (req) {
+            set(s => ({
+              requests: s.requests.map(r =>
+                r.id === req.id ? { ...r, status: 'accepted' as RequestStatus, updatedAt: new Date().toISOString() } : r
+              ),
+            }));
+            db.updateRequestStatusInDb(req.id, 'accepted').catch(() => {});
+          }
+        }
         toast.success('Friend request accepted!');
       },
 
       cancelFriendRequest: (friendshipId) => {
+        const friendship = get().friendships.find(f => f.id === friendshipId);
         set(s => ({
           friendships: s.friendships.filter(f => f.id !== friendshipId),
         }));
         db.deleteFriendshipInDb(friendshipId).catch(dbError('Failed to cancel friend request'));
+
+        // Cancel matching centralized request
+        if (friendship) {
+          const req = get().requests.find(
+            r => r.requestType === 'friend_request' && r.status === 'pending'
+              && r.senderId === friendship.userId && r.recipientId === friendship.friendId
+          );
+          if (req) {
+            set(s => ({
+              requests: s.requests.filter(r => r.id !== req.id),
+            }));
+            db.updateRequestStatusInDb(req.id, 'cancelled').catch(() => {});
+          }
+        }
         toast.success('Friend request cancelled');
       },
 
@@ -1254,9 +1505,10 @@ export const useAppStore = create<AppState>()(
         users: [],
         events: [],
         groups: [],
-        notifications: [],
+      notifications: [],
       friendships: [],
       joinRequests: [],
+      requests: [],
       stories: [],
       }),
       partialize: (state) => ({
