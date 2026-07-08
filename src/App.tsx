@@ -60,21 +60,9 @@ const PageSkeleton = () => (
   </div>
 );
 
-const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoggedIn = useAppStore(s => s.isLoggedIn);
-  const needsPhone = useAppStore(s => s.needsPhone);
-  const loaded = useAppStore(s => s.loaded);
-  const location = useLocation();
-  if (!loaded) return <PageSkeleton />;
-  if (!isLoggedIn) return <Navigate to="/login" state={{ from: location }} replace />;
-  if (needsPhone && location.pathname !== '/complete-profile') return <Navigate to="/complete-profile" replace />;
-  return <>{children}</>;
-};
-
 const AppContent: React.FC = () => {
   const location = useLocation();
   const loadFromSupabase = useAppStore(s => s.loadFromSupabase);
-  const isLoggedIn = useAppStore(s => s.isLoggedIn);
 
   useEffect(() => {
     loadFromSupabase();
