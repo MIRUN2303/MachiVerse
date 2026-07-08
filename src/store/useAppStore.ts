@@ -121,6 +121,7 @@ interface AppState {
   updateEventSummary: (eventId: string, summary: string) => void;
   completeEvent: (eventId: string) => void;
   cancelEvent: (eventId: string) => void;
+  deleteEvent: (eventId: string) => void;
 
   getGroupEvents: (groupId: string) => Event[];
   getNextGroupEvent: (groupId: string) => Event | undefined;
@@ -549,6 +550,14 @@ export const useAppStore = create<AppState>()(
         db.updateEventInDb(eventId, { status: 'cancelled' })
           .catch(e => console.warn('Failed to cancel event', e));
         toast.success('Event cancelled');
+      },
+
+      deleteEvent: (eventId) => {
+        const event = get().events.find(e => e.id === eventId);
+        if (!event) return;
+        set(s => ({ events: s.events.filter(e => e.id !== eventId) }));
+        db.deleteEventFromDb(eventId).catch(e => console.warn('Failed to delete event', e));
+        toast.success('Event deleted');
       },
 
       deleteMatch: (eventId, leagueId, matchId) => {

@@ -276,18 +276,25 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
           />
 
           <motion.div
-            className="fixed bottom-[76px] left-0 right-0 z-50 max-w-lg mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl"
-            style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.08)', maxHeight: 'calc(92dvh - 76px)' }}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 38 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
-            </div>
+            <motion.div
+              className="w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl"
+              style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '85vh' }}
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 38 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+              </div>
 
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(92dvh - 76px - 24px)' }}>
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 24px)' }}>
               <div className="flex items-center justify-between px-5 pb-4 pt-1">
                 <div>
                   <h2 className="font-display font-black text-xl text-white">
@@ -619,6 +626,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                 </AnimatePresence>
               </div>
             </div>
+          </motion.div>
           </motion.div>
         </>
       )}

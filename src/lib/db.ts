@@ -308,6 +308,11 @@ export async function createEventInDb(event: Event): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteEventFromDb(id: string): Promise<void> {
+  const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function updateEventInDb(id: string, updates: any): Promise<void> {
   const { error } = await supabase.from('events').update(updates).eq('id', id);
   if (error) throw error;

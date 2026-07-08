@@ -300,6 +300,12 @@ export const EventDetailPage: React.FC = () => {
                   onClick={() => promptConfirm('Cancel Event', () => { useAppStore.getState().cancelEvent(event.id); })}>
                   <Iconic name="x" size={14} /> Cancel Event
                 </Button>
+                {currentUserId === event.organizer && (
+                  <Button variant="danger" size="sm" className="flex-1"
+                    onClick={() => promptConfirm('Delete Event', () => { useAppStore.getState().deleteEvent(event.id); navigate('/home'); })}>
+                    <Iconic name="trash" size={14} /> Delete
+                  </Button>
+                )}
               </div>
 
               {showEditDetails && (
