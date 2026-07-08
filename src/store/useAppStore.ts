@@ -8,7 +8,41 @@ import * as auth from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { BADGE_CONFIG } from '../data/sportConfig';
 
-let _requestChannel: ReturnType<typeof supabase.channel> | null = null;
+let _liveChannels: Map<string, ReturnType<typeof supabase.channel>> = new Map();
+function getChannel(name: string) {
+  const existing = _liveChannels.get(name);
+  if (existing) { supabase.removeChannel(existing); }
+  const ch = supabase.channel(name);
+  _liveChannels.set(name, ch);
+  return ch;
+}
+function cleanupChannels() {
+  _liveChannels.forEach((ch) => supabase.removeChannel(ch));
+  _liveChannels.clear();
+}
+
+function mapRequestRow(r: any): AppRequest {
+  return {
+    id: r.id, senderId: r.sender_id, recipientId: r.recipient_id,
+    requestType: r.request_type, status: r.status,
+    relatedEntityId: r.related_entity_id || null,
+    metadata: r.metadata || {},
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
+function mapNotifRow(r: any): Notification {
+  return {
+    id: r.id, type: r.type, title: r.title, body: r.body,
+    timestamp: r.timestamp, read: r.read, actionUrl: r.action_url,
+    avatar: r.avatar, userId: r.user_id,
+  } as Notification;
+}
+function mapFriendshipRow(r: any): Friendship {
+  return {
+    id: r.id, userId: r.user_id, friendId: r.friend_id,
+    status: r.status, createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
 
 function dbError(label: string) {
   return (e: any) => toast.error(label + ': ' + (e?.message || e));
@@ -377,43 +411,130 @@ export const useAppStore = create<AppState>()(
           set({ events, groups, notifications, friendships, joinRequests, stories, requests, users: allUsers, loaded: true, isLoggedIn, currentUserId });
           computeAllUserStats(events, set, get);
 
-          // Set up realtime subscription for requests
+          // Set up realtime subscriptions for all live data
           if (isLoggedIn && currentUserId) {
-            // Clean up previous subscription
-            if (_requestChannel) {
-              supabase.removeChannel(_requestChannel);
-              _requestChannel = null;
-            }
-            _requestChannel = supabase.channel('requests-realtime')
+            cleanupChannels();
+
+            // ── Requests ──
+            getChannel('requests')
               .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'requests', filter: `recipient_id=eq.${currentUserId}` },
                 (payload: any) => {
                   const newReq = payload.new;
                   set(s => {
                     if (s.requests.some(r => r.id === newReq.id)) return s;
-                    const appReq: AppRequest = {
-                      id: newReq.id, senderId: newReq.sender_id, recipientId: newReq.recipient_id,
-                      requestType: newReq.request_type, status: newReq.status,
-                      relatedEntityId: newReq.related_entity_id || null,
-                      metadata: newReq.metadata || {},
-                      createdAt: newReq.created_at, updatedAt: newReq.updated_at,
-                    };
-                    return { requests: [appReq, ...s.requests] };
+                    return { requests: [mapRequestRow(newReq), ...s.requests] };
                   });
                 }
               )
               .on('postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'requests', filter: `recipient_id=eq.${currentUserId}` },
                 (payload: any) => {
-                  const updated = payload.new;
+                  const upd = payload.new;
                   set(s => ({
                     requests: s.requests.map(r =>
-                      r.id === updated.id
-                        ? { ...r, status: updated.status, updatedAt: updated.updated_at }
-                        : r
+                      r.id === upd.id ? { ...r, status: upd.status, updatedAt: upd.updated_at } : r
                     ),
                   }));
                 }
+              )
+              .subscribe();
+
+            // ── Notifications ──
+            getChannel('notifications')
+              .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${currentUserId}` },
+                (payload: any) => {
+                  const n = mapNotifRow(payload.new);
+                  set(s => ({ notifications: [n, ...s.notifications] }));
+                }
+              )
+              .on('postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${currentUserId}` },
+                (payload: any) => {
+                  const upd = payload.new;
+                  set(s => ({
+                    notifications: s.notifications.map(n =>
+                      n.id === upd.id ? { ...n, read: upd.read } : n
+                    ),
+                  }));
+                }
+              )
+              .subscribe();
+
+            // ── Events (live re-fetch on any change) ──
+            getChannel('events')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'events' },
+                () => { db.fetchEvents().then(ev => set({ events: ev })).catch(() => {}); }
+              )
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'attendance' },
+                () => { db.fetchEvents().then(ev => set({ events: ev })).catch(() => {}); }
+              )
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'leagues' },
+                () => { db.fetchEvents().then(ev => set({ events: ev })).catch(() => {}); }
+              )
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'teams' },
+                () => { db.fetchEvents().then(ev => set({ events: ev })).catch(() => {}); }
+              )
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'matches' },
+                () => { db.fetchEvents().then(ev => set({ events: ev })).catch(() => {}); }
+              )
+              .subscribe();
+
+            // ── Groups (live re-fetch on change) ──
+            getChannel('groups')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'groups' },
+                () => { db.fetchGroups().then(g => set({ groups: g })).catch(() => {}); }
+              )
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'group_members' },
+                () => { db.fetchGroups().then(g => set({ groups: g })).catch(() => {}); }
+              )
+              .subscribe();
+
+            // ── Friendships ──
+            getChannel('friendships')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'friendships' },
+                (payload: any) => {
+                  set(s => {
+                    const existing = s.friendships;
+                    if (payload.eventType === 'INSERT') {
+                      const f = mapFriendshipRow(payload.new);
+                      return existing.some(x => x.id === f.id) ? s : { friendships: [...existing, f] };
+                    }
+                    if (payload.eventType === 'UPDATE') {
+                      const upd = payload.new;
+                      return { friendships: existing.map(f => f.id === upd.id ? mapFriendshipRow(upd) : f) };
+                    }
+                    if (payload.eventType === 'DELETE') {
+                      return { friendships: existing.filter(f => f.id !== payload.old.id) };
+                    }
+                    return s;
+                  });
+                }
+              )
+              .subscribe();
+
+            // ── Join Requests ──
+            getChannel('join-requests')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'group_join_requests' },
+                () => { db.fetchJoinRequests().then(jr => set({ joinRequests: jr })).catch(() => {}); }
+              )
+              .subscribe();
+
+            // ── Stories ──
+            getChannel('stories')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'stories' },
+                () => { db.fetchStories().then(st => set({ stories: st })).catch(() => {}); }
               )
               .subscribe();
           }
@@ -488,15 +609,12 @@ export const useAppStore = create<AppState>()(
 
       logout: async () => {
         try {
-          if (_requestChannel) {
-            supabase.removeChannel(_requestChannel);
-            _requestChannel = null;
-          }
+          cleanupChannels();
           await auth.signOut();
         } catch (e: any) {
           console.warn('Sign out error', e)
         }
-        set({ isLoggedIn: false, currentUserId: null, users: [], requests: [] });
+        set({ isLoggedIn: false, currentUserId: null, users: [], requests: [], events: [], groups: [], notifications: [], friendships: [], joinRequests: [], stories: [] });
       },
 
       // ---- EVENTS ----
@@ -857,7 +975,10 @@ export const useAppStore = create<AppState>()(
         db.markAllNotificationsReadInDb().catch(dbError('Failed to mark all read'));
       },
 
-      unreadCount: () => get().notifications.filter(n => !n.read).length,
+      unreadCount: () => {
+        const { notifications, currentUserId } = get();
+        return notifications.filter(n => !n.read && n.userId === currentUserId).length;
+      },
 
       addNotification: (n) => {
         const uid = n.userId || get().currentUserId || '';
