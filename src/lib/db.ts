@@ -464,6 +464,7 @@ export async function fetchNotifications(): Promise<Notification[]> {
     read: r.read,
     actionUrl: r.action_url,
     avatar: r.avatar,
+    userId: r.user_id,
   }));
 }
 

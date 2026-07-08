@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { SPORT_CONFIG, BADGE_CONFIG } from '../../data/sportConfig';
-import { Avatar, Button } from '../../components/ui';
+import { Avatar, Button, ConfirmModal } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
 import { useScrollLock } from '../../lib/useScrollLock';
@@ -43,6 +43,8 @@ export const ProfilePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [badgeInfo, setBadgeInfo] = useState<{ id: string; cfg: any; earned: boolean } | null>(null);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
   const friendships = useAppStore(s => s.friendships);
   const sendFriendRequest = useAppStore(s => s.sendFriendRequest);
@@ -548,7 +550,7 @@ export const ProfilePage: React.FC = () => {
                           <p className="font-semibold text-white text-sm">{friendUser.name}</p>
                           <p className="text-white/30 text-xs">Request sent</p>
                         </div>
-                        <button onClick={() => cancelFriendRequest(f.id)}
+                        <button onClick={() => setConfirmCancel(f.id)}
                           className="text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95"
                           style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                           Cancel
@@ -586,7 +588,7 @@ export const ProfilePage: React.FC = () => {
                           <p className="font-semibold text-white text-sm">{friend.name}</p>
                           <p className="text-white/30 text-xs">@{friend.username} · {friend.stats.totalMatches} matches</p>
                         </div>
-                        <button onClick={() => fs && removeFriend(fs.id)}
+                        <button onClick={() => fs && setConfirmRemove(fs.id)}
                           className="text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95"
                           style={{ background: 'rgba(239,68,68,0.1)', color: 'rgba(239,68,68,0.6)' }}>
                           Unfriend
@@ -672,6 +674,28 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Confirm Cancel Friend Request */}
+      <ConfirmModal
+        open={!!confirmCancel}
+        title="Cancel Request"
+        message="Are you sure you want to cancel this friend request?"
+        confirmLabel="Cancel Request"
+        variant="danger"
+        onConfirm={() => { if (confirmCancel) cancelFriendRequest(confirmCancel); setConfirmCancel(null); }}
+        onCancel={() => setConfirmCancel(null)}
+      />
+
+      {/* Confirm Remove Friend */}
+      <ConfirmModal
+        open={!!confirmRemove}
+        title="Remove Friend"
+        message="Are you sure you want to remove this friend?"
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => { if (confirmRemove) removeFriend(confirmRemove); setConfirmRemove(null); }}
+        onCancel={() => setConfirmRemove(null)}
+      />
     </div>
   );
 };

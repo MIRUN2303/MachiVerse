@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../../store/useAppStore';
-import { Button } from '../../components/ui';
+import { Button, ConfirmModal } from '../../components/ui';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
 import { clsx } from 'clsx';
 
@@ -37,21 +37,35 @@ export const NotificationsPage: React.FC = () => {
   const declineGroupInvite = useAppStore(s => s.declineGroupInvite);
   const markNotificationRead = useAppStore(s => s.markNotificationRead);
 
+  const [confirmGroupAction, setConfirmGroupAction] = useState<{ notifId: string; action: 'accept' | 'decline'; groupName?: string } | null>(null);
+
   const myNotifications = notifications.filter(n => !n.userId || n.userId === currentUserId);
   const unread = myNotifications.filter(n => !n.read).length;
 
-  const handleAcceptGroup = (notifId: string, actionUrl: string) => {
-    const parts = actionUrl.split(':');
-    if (parts.length < 3) return;
-    const groupId = parts[1];
-    const inviterId = parts[2];
-    acceptGroupInvite(groupId, inviterId);
-    markNotificationRead(notifId);
+  const handleAcceptGroup = (notifId: string, _actionUrl: string, body: string) => {
+    const groupName = body.includes('"') ? body.split('"')[1] : 'the group';
+    setConfirmGroupAction({ notifId, action: 'accept', groupName });
   };
 
   const handleDeclineGroup = (notifId: string) => {
-    declineGroupInvite();
+    setConfirmGroupAction({ notifId, action: 'decline' });
+  };
+
+  const executeGroupAction = () => {
+    if (!confirmGroupAction) return;
+    const { notifId, action } = confirmGroupAction;
+    const notif = myNotifications.find(n => n.id === notifId);
+    if (!notif) return;
+    if (action === 'accept') {
+      const parts = (notif.actionUrl || '').split(':');
+      if (parts.length >= 3) {
+        acceptGroupInvite(parts[1], parts[2]);
+      }
+    } else {
+      declineGroupInvite();
+    }
     markNotificationRead(notifId);
+    setConfirmGroupAction(null);
   };
 
   return (
@@ -99,7 +113,7 @@ export const NotificationsPage: React.FC = () => {
                   <p className="text-white/30 text-xs mt-1">{timeAgo(notif.timestamp)}</p>
                   {notif.type === 'group_join' && !notif.read && (
                     <div className="flex gap-2 mt-2">
-                      <button onClick={(e) => { e.stopPropagation(); handleAcceptGroup(notif.id, notif.actionUrl || ''); }}
+                      <button onClick={(e) => { e.stopPropagation(); handleAcceptGroup(notif.id, notif.actionUrl || '', notif.body); }}
                         className="text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all active:scale-95"
                         style={{ background: 'var(--green)', color: '#080808' }}>
                         Accept
@@ -120,6 +134,19 @@ export const NotificationsPage: React.FC = () => {
           );
         })}
       </StaggerList>
+
+      {/* Confirm Group Action */}
+      <ConfirmModal
+        open={!!confirmGroupAction}
+        title={confirmGroupAction?.action === 'accept' ? 'Join Group' : 'Decline Invitation'}
+        message={confirmGroupAction?.action === 'accept'
+          ? `Are you sure you want to join "${confirmGroupAction?.groupName || 'the group'}"?`
+          : 'Are you sure you want to decline this group invitation?'}
+        confirmLabel={confirmGroupAction?.action === 'accept' ? 'Join' : 'Decline'}
+        variant={confirmGroupAction?.action === 'decline' ? 'danger' : 'default'}
+        onConfirm={executeGroupAction}
+        onCancel={() => setConfirmGroupAction(null)}
+      />
     </div>
   );
 };
