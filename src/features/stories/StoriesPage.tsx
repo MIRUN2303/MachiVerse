@@ -159,27 +159,28 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
   const [idx, setIdx] = useState(initialIdx);
   const [progress, setProgress] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const progressRef = useRef(0);
 
+  // Auto-advance timer
   useEffect(() => {
+    progressRef.current = 0;
     setProgress(0);
     const dur = 5000;
     const step = 50;
     const interval = setInterval(() => {
-      setProgress(p => {
-        const next = p + (step / dur) * 100;
-        if (next >= 100) {
-          if (idx < stories.length - 1) {
-            setIdx(i => i + 1);
-            return 0;
-          }
+      progressRef.current += (step / dur) * 100;
+      if (progressRef.current >= 100) {
+        if (idx < stories.length - 1) {
+          setIdx(i => i + 1);
+        } else {
           onClose();
-          return 100;
         }
-        return next;
-      });
+        return;
+      }
+      setProgress(progressRef.current);
     }, step);
     return () => clearInterval(interval);
-  }, [idx, stories.length, onClose]);
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -188,8 +189,8 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
     return () => { window.removeEventListener('keydown', handler); document.body.style.overflow = ''; };
   }, [onClose]);
 
-  const goNext = () => { if (idx < stories.length - 1) { setIdx(i => i + 1); setProgress(0); } else onClose(); };
-  const goPrev = () => { if (idx > 0) { setIdx(i => i - 1); setProgress(0); } };
+  const goNext = () => { if (idx < stories.length - 1) { setIdx(i => i + 1); } else onClose(); };
+  const goPrev = () => { if (idx > 0) { setIdx(i => i - 1); } };
 
   const handleDelete = () => {
     const storyId = stories[idx]?.id;
@@ -201,64 +202,122 @@ const StoryViewerPopup: React.FC<{ user: any; stories: any[]; initialIdx: number
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100]"
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{ background: '#000' }}
       onClick={goNext}
     >
       {/* Progress bars */}
-      <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
+      <div className="absolute top-2 left-2 right-2 flex gap-1 z-20">
         {stories.map((_, i) => (
           <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.2)' }}>
-            <div className="h-full transition-all duration-75" style={{
-              width: i < idx ? '100%' : i === idx ? `${progress}%` : '0%',
-              background: '#fff',
-            }} />
+            <motion.div
+              className="h-full rounded-full"
+              initial={false}
+              animate={{ width: i < idx ? '100%' : i === idx ? `${progress}%` : '0%' }}
+              transition={{ duration: 0.05, ease: 'linear' }}
+              style={{ background: i === idx ? '#fff' : 'rgba(255,255,255,0.5)' }}
+            />
           </div>
         ))}
       </div>
 
-      {/* Top bar: user info left, close+delete right */}
-      <div className="absolute top-6 left-4 right-4 z-10 flex items-center justify-between">
+      {/* Top bar */}
+      <div className="absolute top-6 left-4 right-4 z-20 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {user && <Avatar src={user.avatar} name={user.name} size="sm" />}
-          <span className="text-xs font-semibold text-white">{user?.name}</span>
+          <span className="text-xs font-semibold text-white drop-shadow">{user?.name}</span>
         </div>
         <div className="flex items-center gap-2">
           {isOwn && (
-            <button onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
-              className="text-white/50 hover:text-red-400 transition-colors p-1" title="Delete story">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <motion.button onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+              whileTap={{ scale: 0.85 }}
+              className="text-white/50 hover:text-red-400 transition-colors p-1.5 rounded-xl hover:bg-white/5" title="Delete story">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
-            </button>
+            </motion.button>
           )}
-          <button onClick={e => { e.stopPropagation(); onClose(); }} className="text-white/60 text-xl">✕</button>
+          <motion.button onClick={e => { e.stopPropagation(); onClose(); }}
+            whileTap={{ scale: 0.85 }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-white/50 hover:text-white transition-colors hover:bg-white/5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </motion.button>
         </div>
       </div>
 
-      {/* Full-screen image — object-contain so full image visible, black bars for empty space */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#000' }}>
-        <img src={stories[idx]?.imageUrl} alt=""
-          className="w-full h-full" style={{ objectFit: 'contain' }}
-          onClick={e => e.stopPropagation()} />
+      {/* Full-screen image — proper aspect ratio container */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ background: '#000' }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            className="w-full h-full flex items-center justify-center"
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            <img src={stories[idx]?.imageUrl} alt=""
+              className="w-full h-full" style={{ objectFit: 'contain' }}
+              onClick={e => e.stopPropagation()} />
+          </motion.div>
+        </AnimatePresence>
         {/* Bottom gradient overlay for caption readability */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.6))' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
+          style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.65))' }} />
       </div>
 
-      {/* Tap zones */}
-      <div className="absolute inset-0 flex" onClick={e => e.stopPropagation()}>
-        <div className="w-1/3 h-full" onClick={goPrev} />
+      {/* Tap zones with visual indicators on hover */}
+      <div className="absolute inset-0 flex z-10" onClick={e => e.stopPropagation()}>
+        <motion.div
+          className="w-1/3 h-full flex items-center justify-start pl-4 cursor-pointer"
+          onClick={goPrev}
+          whileHover={{ background: 'rgba(255,255,255,0.03)' }}
+        >
+          {idx > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              className="w-8 h-8 rounded-full flex items-center justify-center pointer-events-none"
+              style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </motion.div>
+          )}
+        </motion.div>
         <div className="w-1/3 h-full" />
-        <div className="w-1/3 h-full" onClick={goNext} />
+        <motion.div
+          className="w-1/3 h-full flex items-center justify-end pr-4 cursor-pointer"
+          onClick={goNext}
+          whileHover={{ background: 'rgba(255,255,255,0.03)' }}
+        >
+          {idx < stories.length - 1 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              className="w-8 h-8 rounded-full flex items-center justify-center pointer-events-none"
+              style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
 
       {/* Caption */}
-      {stories[idx]?.caption && (
-        <div className="absolute bottom-8 left-4 right-4 z-10">
-          <p className="text-white/90 text-sm drop-shadow-lg">{stories[idx].caption}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {stories[idx]?.caption && (
+          <motion.div
+            key={`cap-${idx}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute bottom-8 left-4 right-4 z-20"
+          >
+            <p className="text-white/90 text-sm drop-shadow-lg">{stories[idx].caption}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete confirmation */}
       <ConfirmModal

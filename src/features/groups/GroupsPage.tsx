@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { SPORT_CONFIG } from '../../data/sportConfig';
@@ -6,7 +6,7 @@ import { getUserById, getCompletedGroupEvents, getUpcomingGroupEvents, getGroupE
 import { Card, Avatar, Badge, Button, SectionHeader, ConfirmModal } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
-import { FAB } from '../../components/layout/Navigation';
+import { useFabStore } from '../../components/layout/Navigation';
 import { clsx } from 'clsx';
 import { useAppStore } from '../../store/useAppStore';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
@@ -392,9 +392,9 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
             <button type="button" onClick={() => setEmojiOpen(!emojiOpen)}
               className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 flex items-center gap-3"
             >
-              <span className="text-2xl">{logo}</span>
-              <span className="text-white/40 text-xs flex-1 text-left">Choose an emoji</span>
-              <motion.span animate={{ rotate: emojiOpen ? 180 : 0 }} className="text-white/30 text-xs">▾</motion.span>
+              <span className="text-2xl leading-none flex items-center justify-center w-8 h-8">{logo}</span>
+              <span className="text-white/40 text-xs flex-1 text-left leading-none">Choose an emoji</span>
+              <motion.span animate={{ rotate: emojiOpen ? 180 : 0 }} className="text-white/30 text-xs leading-none">▾</motion.span>
             </button>
             <AnimatePresence>
               {emojiOpen && (
@@ -899,6 +899,12 @@ export const GroupsPage: React.FC = () => {
   const groups = useAppStore(s => s.groups);
   const [showCreate, setShowCreate] = useState(false);
 
+  // Wire global FAB action
+  useEffect(() => {
+    useFabStore.getState().setAction(() => setShowCreate(true));
+    return () => useFabStore.getState().setAction(null);
+  }, []);
+
   const currentUser = currentUserId ? getUserById(currentUserId) : null;
   const myCreatedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role === 'creator'));
   const myJoinedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role !== 'creator'));
@@ -1044,7 +1050,6 @@ export const GroupsPage: React.FC = () => {
       )}
 
       <CreateGroupModal open={showCreate} onClose={() => setShowCreate(false)} />
-      <FAB onClick={() => setShowCreate(true)} />
     </div>
   );
 };

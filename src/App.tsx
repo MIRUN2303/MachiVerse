@@ -6,7 +6,7 @@ import { useAppStore } from './store/useAppStore';
 import * as auth from './lib/auth';
 import { connectionManager } from './lib/connection';
 
-import { BottomNav, AppHeader } from './components/layout/Navigation';
+import { BottomNav, AppHeader, FAB } from './components/layout/Navigation';
 import { HomePage } from './features/home/HomePage';
 import { EventDetailPage, EventsPage } from './features/events/EventsPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
@@ -126,6 +126,8 @@ const AppContent: React.FC = () => {
         </Suspense>
       </main>
 
+      {/* FAB — always above nav, never affected by page transforms */}
+      {!isAuthPage && <FAB />}
       {!isAuthPage && <BottomNav />}
 
       {/* Premium dark toast styling */}

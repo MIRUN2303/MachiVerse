@@ -721,66 +721,109 @@ const BadgeInfoPopup: React.FC<{
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.6)' }}
+      style={{ background: 'rgba(0,0,0,0.7)' }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.88, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-        className="w-full max-w-sm rounded-3xl p-6 relative overflow-hidden"
+        exit={{ opacity: 0, scale: 0.88, y: 30 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.9 }}
+        className="w-full max-w-sm rounded-3xl p-6 relative overflow-hidden backdrop-blur-xl"
         style={{
-          background: `linear-gradient(180deg, ${rarityCfg.color}12, #141414)`,
+          background: `linear-gradient(180deg, ${rarityCfg.color}18, #141414)`,
           border: `1px solid ${rarityCfg.color}30`,
+          boxShadow: `0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 ${rarityCfg.color}20`,
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.15)' }} />
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.12)' }} />
 
         {/* Close button */}
         <button onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all"
-          style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+          className="absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
+          style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
 
-        {/* Badge emoji */}
-        <div className="text-5xl text-center mb-3">{cfg.emoji}</div>
+        {/* Badge emoji with spring bounce */}
+        <motion.div
+          className="text-5xl text-center mb-3"
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', damping: 14, stiffness: 220, delay: 0.1 }}
+        >
+          {cfg.emoji}
+        </motion.div>
 
         {/* Owned/Locked badge */}
-        <div className="text-center mb-3">
+        <motion.div
+          className="text-center mb-3"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           {earned ? (
-            <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full"
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
               style={{ background: rarityCfg.color + '20', color: rarityCfg.color, border: `1px solid ${rarityCfg.color}40` }}>
-              ✓ You own this badge
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              You own this badge
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full"
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
               style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              🔒 Locked
+              <span>🔒</span> Locked
             </span>
           )}
-        </div>
+        </motion.div>
 
         {/* Title & rarity */}
-        <h3 className="font-display font-bold text-lg text-white text-center">{cfg.label}</h3>
-        <p className="text-center text-xs mt-1" style={{ color: rarityCfg.color }}>{rarityCfg.label}</p>
+        <motion.h3
+          className="font-display font-bold text-lg text-white text-center"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >{cfg.label}</motion.h3>
+        <motion.p
+          className="text-center text-xs mt-1 font-semibold"
+          style={{ color: rarityCfg.color }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >{rarityCfg.label}</motion.p>
 
         {/* Description */}
-        <p className="text-center text-sm text-white/50 mt-3 leading-relaxed">{cfg.description}</p>
+        <motion.p
+          className="text-center text-sm text-white/50 mt-3 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+        >{cfg.description}</motion.p>
 
-        {/* Criteria */}
-        <div className="mt-4 glass rounded-2xl p-3.5">
-          <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">How to unlock</p>
-          <p className="text-xs text-white/70">{BADGE_CRITERIA[badgeId] || cfg.description}</p>
+        {/* Criteria + Progress card */}
+        <motion.div
+          className="mt-4 rounded-2xl p-4 relative overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${rarityCfg.color}08, rgba(255,255,255,0.03))`,
+            border: `1px solid ${rarityCfg.color}15`,
+            backdropFilter: 'blur(12px)',
+          }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">How to unlock</p>
+          <p className="text-xs text-white/70 leading-relaxed">{BADGE_CRITERIA[badgeId] || cfg.description}</p>
 
           {/* Progress bar */}
           {!earned && (
             <div className="mt-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-white/30">Progress</span>
-                <span className="text-[10px] font-semibold" style={{ color: rarityCfg.color }}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-white/30 font-medium">Progress</span>
+                <span className="text-[10px] font-bold" style={{ color: rarityCfg.color }}>
                   {progress.current} / {progress.target}
                 </span>
               </div>
@@ -789,25 +832,31 @@ const BadgeInfoPopup: React.FC<{
                   className="h-full rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  style={{ background: rarityCfg.color, boxShadow: `0 0 8px ${rarityCfg.color}60` }}
+                  transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
+                  style={{ background: rarityCfg.color, boxShadow: `0 0 10px ${rarityCfg.color}60` }}
                 />
               </div>
             </div>
           )}
 
-          {/* Owned confirmation extra */}
+          {/* Owned confirmation */}
           {earned && (
-            <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-[10px] text-white/40 flex items-center gap-1">
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <motion.div
+              className="mt-2 pt-2.5 flex items-center gap-2"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(var(--green-rgb),0.15)' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                Unlocked on {new Date().toLocaleDateString()}
-              </p>
-            </div>
+              </div>
+              <p className="text-[10px] text-white/40">Unlocked on {new Date().toLocaleDateString()}</p>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </motion.div>
     </motion.div>
   );

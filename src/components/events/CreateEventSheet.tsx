@@ -259,10 +259,11 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
         <>
           <motion.div
             className="fixed inset-0 z-50"
-            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+            style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={resetAndClose}
           />
 
@@ -271,6 +272,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
             <motion.div
               className="relative w-full max-w-lg flex flex-col"
@@ -279,27 +281,33 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                 border: '1px solid rgba(255,255,255,0.08)',
                 maxHeight: 'min(78dvh, 78vh, 620px)',
                 borderRadius: '1.5rem 1.5rem 0 0',
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
               }}
               initial={{ y: '100%', opacity: 1 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 38 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 36, mass: 1 }}
               onClick={e => e.stopPropagation()}
             >
+              {/* Handle */}
+              <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-2" style={{ background: 'rgba(255,255,255,0.12)' }} />
+
               {/* Header */}
-              <div className="flex items-center justify-between px-6 pt-5 pb-2 flex-shrink-0">
-                <div>
-                  <h2 className="font-display font-bold text-lg text-white">
-                    {mode === 'live' ? 'Start Live Event' : 'Schedule Event'}
-                  </h2>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    {selectedGroup ? `in ${selectedGroup.name}` : 'Select a group first'}
-                  </p>
-                </div>
-                <button onClick={resetAndClose}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
-              </div>
+               <div className="flex items-center justify-between px-6 pt-1 pb-2 flex-shrink-0">
+                 <div>
+                   <h2 className="font-display font-bold text-lg text-white">
+                     {mode === 'live' ? 'Start Live Event' : 'Schedule Event'}
+                   </h2>
+                   <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                     {selectedGroup ? `in ${selectedGroup.name}` : 'Select a group first'}
+                   </p>
+                 </div>
+                 <button onClick={resetAndClose}
+                   className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200 flex-shrink-0"
+                   style={{ background: 'rgba(255,255,255,0.06)' }}>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                 </button>
+               </div>
 
               {/* Step indicator */}
               {mode === 'schedule' && (
@@ -393,13 +401,15 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                         />
                       )}
 
-                      <Button
-                        variant="lime" fullWidth size="lg"
-                        disabled={!canProceed}
-                        onClick={() => setStep('schedule')}
-                      >
-                        Next: Schedule →
-                      </Button>
+                      <motion.div whileHover={{ scale: canProceed ? 1.02 : 1 }} whileTap={{ scale: canProceed ? 0.97 : 1 }}>
+                        <Button
+                          variant="lime" fullWidth size="lg"
+                          disabled={!canProceed}
+                          onClick={() => setStep('schedule')}
+                        >
+                          Next: Schedule →
+                        </Button>
+                      </motion.div>
                     </motion.div>
                   )}
 
@@ -494,14 +504,18 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                       </div>
 
                       <div className="flex gap-3 pt-2 pb-4 sticky bottom-0" style={{ background: '#0f0f0f' }}>
-                        <Button variant="ghost" size="lg" className="flex-1" onClick={() => setStep('details')}>← Back</Button>
-                        <Button
-                          variant="lime" size="lg" className="flex-2 flex-1"
-                          disabled={!canSubmitSchedule} loading={loading}
-                          onClick={handleCreateSchedule}
-                        >
-                          ✓ Confirm & Create
-                        </Button>
+                        <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                          <Button variant="ghost" size="lg" className="flex-1" onClick={() => setStep('details')}>← Back</Button>
+                        </motion.div>
+                        <motion.div className="flex-1" whileHover={{ scale: canSubmitSchedule ? 1.02 : 1 }} whileTap={{ scale: canSubmitSchedule ? 0.97 : 1 }}>
+                          <Button
+                            variant="lime" size="lg" className="w-full"
+                            disabled={!canSubmitSchedule} loading={loading}
+                            onClick={handleCreateSchedule}
+                          >
+                            ✓ Confirm & Create
+                          </Button>
+                        </motion.div>
                       </div>
                     </motion.div>
                   )}
@@ -587,13 +601,15 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
                         />
                       )}
 
-                      <Button
-                        variant="lime" fullWidth size="lg"
-                        disabled={!canSubmitLive} loading={loading}
-                        onClick={handleCreateLive}
-                      >
-                        <><Iconic name="lightning" size={18} /> Start Live Now</>
-                      </Button>
+                      <motion.div whileHover={{ scale: canSubmitLive ? 1.02 : 1 }} whileTap={{ scale: canSubmitLive ? 0.97 : 1 }}>
+                        <Button
+                          variant="lime" fullWidth size="lg"
+                          disabled={!canSubmitLive} loading={loading}
+                          onClick={handleCreateLive}
+                        >
+                          <><Iconic name="lightning" size={18} /> Start Live Now</>
+                        </Button>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>

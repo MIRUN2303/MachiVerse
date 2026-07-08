@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { clsx } from 'clsx';
+import { create } from 'zustand';
 import { useAppStore } from '../../store/useAppStore';
 import {
   IconHome,
@@ -12,6 +13,17 @@ import {
   IconPlus,
   IconBell,
 } from '../ui/icons';
+
+// =============================================
+// FAB Action Store — non-persisted, clean
+// =============================================
+export const useFabStore = create<{
+  action: (() => void) | null;
+  setAction: (fn: (() => void) | null) => void;
+}>((set) => ({
+  action: null,
+  setAction: (fn) => set({ action: fn }),
+}));
 
 const NAV_ITEMS = [
   { path: '/home',    icon: IconHome,         label: 'Home'    },
@@ -131,25 +143,29 @@ export const BottomNav: React.FC = () => {
 };
 
 // =============================================
-// FAB — responsive position on desktop
+// FAB — global, always above nav-bar, never moves
 // =============================================
-export const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+export const FAB: React.FC = () => {
   const location = useLocation();
-  if (location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/login' || location.pathname === '/signup') return null;
+  const action = useFabStore(s => s.action);
+  const hiddenRoute = location.pathname === '/' || location.pathname === '/landing' || location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/complete-profile';
+  if (hiddenRoute || !action) return null;
 
   return (
     <motion.button
-      className="fixed bottom-20 sm:bottom-12 right-6 z-[60] w-14 h-14 rounded-2xl flex items-center justify-center focus:outline-none"
+      className="fixed right-6 z-[60] w-14 h-14 rounded-2xl flex items-center justify-center focus:outline-none fab-desktop"
       style={{
         background: 'linear-gradient(135deg, var(--green) 0%, var(--green-bright) 100%)',
         boxShadow: '0 6px 28px rgba(var(--green-rgb), 0.55)',
+        bottom: 'calc(72px + env(safe-area-inset-bottom, 0px) + 12px)',
       }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.3 }}
       whileHover={{ scale: 1.08, boxShadow: '0 8px 36px rgba(var(--green-rgb), 0.75)' }}
       whileTap={{ scale: 0.88 }}
-      onClick={onClick}
+      onClick={action}
+      aria-label="Create"
     >
       <IconPlus size={26} strokeWidth={2.5} className="text-black" />
     </motion.button>
