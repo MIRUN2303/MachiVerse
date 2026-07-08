@@ -278,7 +278,7 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
 
           {/* Sheet positioner — pointer-events-none so backdrop click falls through */}
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4 overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -286,11 +286,11 @@ export const CreateEventSheet: React.FC<CreateEventSheetProps> = ({
           >
             {/* Sheet card */}
             <motion.div
-              className="relative w-full max-w-lg flex flex-col pointer-events-auto max-h-full"
+              className="relative w-full max-w-lg flex flex-col pointer-events-auto h-full"
               style={{
                 background: '#0f0f0f',
                 border: '1px solid rgba(255,255,255,0.08)',
-                maxHeight: 'min(85dvh, 85vh)',
+                maxHeight: 'min(calc(100dvh - 2rem), 85dvh)',
                 borderRadius: '1.5rem',
                 boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
               }}

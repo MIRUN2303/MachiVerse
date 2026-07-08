@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory, BadgeId } from '../data/types';
+import type { Event, Group, Notification, Story, Friendship, League, AttendanceStatus, Match, EventCategory, BadgeId, JoinRequest } from '../data/types';
 
 import toast from 'react-hot-toast';
 import * as db from '../lib/db';
@@ -202,6 +202,7 @@ interface CreateGroupInput {
   description: string;
   isPrivate: boolean;
   rules: string[];
+  inviteCode?: string;
 }
 
 interface AppState {
@@ -251,6 +252,7 @@ interface AppState {
   groups: Group[];
   users: any[];
   createGroup: (input: CreateGroupInput) => string;
+  generateInviteCode: () => string;
   joinGroup: (groupId: string) => void;
   inviteByProfileCode: (groupId: string, profileCode: string) => boolean;
   updateGroupDetails: (groupId: string, updates: Partial<Pick<Group, 'name' | 'description' | 'rules'>>) => void;
@@ -258,6 +260,11 @@ interface AppState {
   deleteGroup: (groupId: string) => void;
   exitGroup: (groupId: string) => void;
   kickMember: (groupId: string, userId: string) => void;
+  joinRequests: JoinRequest[];
+  findGroupByInviteCode: (code: string) => Group | undefined;
+  sendJoinRequest: (groupId: string) => void;
+  acceptJoinRequest: (requestId: string) => void;
+  rejectJoinRequest: (requestId: string) => void;
 
   stories: Story[];
   friendships: Friendship[];
@@ -288,6 +295,7 @@ export const useAppStore = create<AppState>()(
       users: [],
       stories: [],
       friendships: [],
+      joinRequests: [],
 
       loadFromSupabase: async () => {
         try {
@@ -296,11 +304,12 @@ export const useAppStore = create<AppState>()(
           const authUser = session?.user ?? null;
 
           // 2. Fetch all data from Supabase tables
-          const [events, groups, notifications, friendships, stories] = await Promise.all([
+          const [events, groups, notifications, friendships, joinRequests, stories] = await Promise.all([
             db.fetchEvents().catch(() => []),
             db.fetchGroups().catch(() => []),
             db.fetchNotifications().catch(() => []),
             db.fetchFriendships().catch(() => []),
+            db.fetchJoinRequests().catch(() => []),
             db.fetchStories().catch(() => []),
           ]);
           const users = await db.fetchUsers().catch(() => []);
@@ -333,7 +342,7 @@ export const useAppStore = create<AppState>()(
           // isLoggedIn = !!session, not !!currentUserId — DB failure won't log the user out
           const isLoggedIn = !!authUser;
           const needsPhone = isLoggedIn && (!currentUser || !currentUser.phone);
-          set({ events, groups, notifications, friendships, stories, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
+          set({ events, groups, notifications, friendships, joinRequests, stories, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
           computeAllUserStats(events, set, get);
         } catch (e) {
           console.warn('Supabase load failed, using empty state', e);
@@ -780,6 +789,15 @@ export const useAppStore = create<AppState>()(
       setNeedsPhone: (v) => set({ needsPhone: v }),
       setActiveTab: (tab) => set({ activeTab: tab }),
 
+      generateInviteCode: () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        const existing = get().groups;
+        if (existing.some(g => g.inviteCode === code)) return get().generateInviteCode();
+        return code;
+      },
+
       createGroup: (input) => {
         const currentUserId = get().currentUserId;
         if (!currentUserId) return '';
@@ -790,13 +808,14 @@ export const useAppStore = create<AppState>()(
         }
 
         const newId = gid();
+        const inviteCode = get().generateInviteCode();
         const newGroup: Group = {
           id: newId, name: input.name, logo: input.logo || '🎯',
           banner: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
           description: input.description, memberCount: 1,
           members: [{ userId: currentUserId, role: 'creator', joinedAt: new Date().toISOString().split('T')[0], stats: { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 } }],
           createdAt: new Date().toISOString().split('T')[0], rules: input.rules,
-          isPrivate: input.isPrivate, tags: [], upcomingEvents: 0, totalEvents: 0,
+          isPrivate: input.isPrivate, tags: [], upcomingEvents: 0, totalEvents: 0, inviteCode,
         };
 
         user.createdGroups = [...user.createdGroups, newId];
@@ -940,6 +959,88 @@ export const useAppStore = create<AppState>()(
         toast.success(`Removed ${kicked?.name || 'member'} from group`);
       },
 
+      // ---- JOIN REQUESTS ----
+      findGroupByInviteCode: (code) => {
+        return get().groups.find(g => g.inviteCode === code);
+      },
+
+      sendJoinRequest: (groupId) => {
+        const currentUserId = get().currentUserId;
+        if (!currentUserId) return;
+        const group = get().groups.find(g => g.id === groupId);
+        if (!group) { toast.error('Group not found'); return; }
+        const existing = get().joinRequests.find(r => r.groupId === groupId && r.userId === currentUserId && r.status === 'pending');
+        if (existing) { toast.error('Request already sent'); return; }
+        const id = `jr_${Date.now()}`;
+        const now = new Date().toISOString();
+        const request: JoinRequest = { id, groupId, userId: currentUserId, status: 'pending', createdAt: now, updatedAt: now };
+        set(s => ({ joinRequests: [...s.joinRequests, request] }));
+
+        db.createJoinRequestInDb(request).catch(e => console.warn('Failed to save join request', e));
+
+        const adminMember = group.members.find(m => m.role === 'creator' || m.role === 'admin');
+        if (adminMember) {
+          const requester = get().users.find((u: any) => u.id === currentUserId);
+          get().addNotification({
+            title: 'Join Request',
+            body: `${requester?.name || 'Someone'} wants to join "${group.name}"`,
+            type: 'group_join',
+            userId: adminMember.userId,
+            actionUrl: '/groups/' + groupId,
+            read: false,
+          });
+        }
+        toast.success('Join request sent to group admin!');
+      },
+
+      acceptJoinRequest: (requestId) => {
+        const request = get().joinRequests.find(r => r.id === requestId);
+        if (!request) return;
+        const now = new Date().toISOString();
+        set(s => ({
+          joinRequests: s.joinRequests.map(r =>
+            r.id === requestId ? { ...r, status: 'accepted' as const, updatedAt: now } : r
+          ),
+        }));
+        db.updateJoinRequestInDb(requestId, { status: 'accepted', updated_at: now }).catch(e => console.warn('Failed to update join request', e));
+
+        const group = get().groups.find(g => g.id === request.groupId);
+        if (!group) return;
+        group.memberCount++;
+        group.members.push({
+          userId: request.userId, role: 'member', joinedAt: now.split('T')[0],
+          stats: { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 },
+        });
+        set(s => ({ groups: s.groups.map(g => g.id === request.groupId ? group : g) }));
+        db.updateGroup(request.groupId, { member_count: group.memberCount }).catch(e => console.warn('Failed to update group', e));
+        db.addGroupMember({ group_id: request.groupId, user_id: request.userId, role: 'member', joined_at: now.split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
+          .catch(e => console.warn('Failed to add group member', e));
+
+        const invitedUser = get().users.find((u: any) => u.id === request.userId);
+        if (invitedUser) {
+          invitedUser.joinedGroups = [...(invitedUser.joinedGroups || []), request.groupId];
+          get().addNotification({
+            title: 'Request Accepted',
+            body: `You've been added to "${group.name}"`,
+            type: 'group_join',
+            userId: request.userId,
+            read: false,
+          });
+        }
+        toast.success('Join request accepted!');
+      },
+
+      rejectJoinRequest: (requestId) => {
+        const now = new Date().toISOString();
+        set(s => ({
+          joinRequests: s.joinRequests.map(r =>
+            r.id === requestId ? { ...r, status: 'rejected' as const, updatedAt: now } : r
+          ),
+        }));
+        db.updateJoinRequestInDb(requestId, { status: 'rejected', updated_at: now }).catch(e => console.warn('Failed to reject join request', e));
+        toast.success('Join request rejected');
+      },
+
       // ---- FRIENDS ----
       sendFriendRequest: (friendId) => {
         const id = `fs_${Date.now()}`;
@@ -948,6 +1049,19 @@ export const useAppStore = create<AppState>()(
         const friendship: Friendship = { id, userId: currentUserId, friendId, status: 'pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         set(s => ({ friendships: [...s.friendships, friendship] }));
         db.createFriendshipInDb(friendship).catch(e => console.warn('Failed to save friendship', e));
+
+        const friend = get().users.find((u: any) => u.id === friendId);
+        const requester = get().users.find((u: any) => u.id === currentUserId);
+        if (friend) {
+          get().addNotification({
+            title: 'Friend Request',
+            body: `${requester?.name || 'Someone'} sent you a friend request`,
+            type: 'friend_request',
+            userId: friendId,
+            actionUrl: '/profile',
+            read: false,
+          });
+        }
         toast.success('Friend request sent!');
       },
 
@@ -1046,8 +1160,9 @@ export const useAppStore = create<AppState>()(
         events: [],
         groups: [],
         notifications: [],
-        friendships: [],
-        stories: [],
+      friendships: [],
+      joinRequests: [],
+      stories: [],
       }),
       partialize: (state) => ({
         activeTab: state.activeTab,

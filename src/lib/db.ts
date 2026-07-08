@@ -1,7 +1,7 @@
 import { supabase, supabaseNoAuth } from './supabase';
 import type {
   User, Group, GroupMember, Event, League, Team, Match,
-  AttendanceRecord, Notification, Friendship, Story,
+  AttendanceRecord, Notification, Friendship, Story, JoinRequest,
 } from '../data/types';
 
 // =============================================
@@ -85,6 +85,7 @@ export async function fetchGroups(): Promise<Group[]> {
       tags: g.tags || [],
       upcomingEvents: g.upcoming_events,
       totalEvents: g.total_events,
+      inviteCode: g.invite_code || '',
     };
   });
 }
@@ -120,6 +121,7 @@ export async function createGroupInDb(group: Group): Promise<void> {
     tags: group.tags,
     upcoming_events: group.upcomingEvents,
     total_events: group.totalEvents,
+    invite_code: group.inviteCode,
   });
   if (error) throw error;
 }
@@ -147,6 +149,38 @@ export async function removeGroupMember(groupId: string, userId: string): Promis
 export async function updateGroup(id: string, updates: any): Promise<void> {
   const { error } = await supabase.from('groups').update(updates).eq('id', id);
   if (error) throw error;
+}
+
+// =============================================
+// JOIN REQUESTS
+// =============================================
+export async function createJoinRequestInDb(request: JoinRequest): Promise<void> {
+  const { error } = await supabase.from('group_join_requests').insert({
+    group_id: request.groupId,
+    user_id: request.userId,
+    status: request.status,
+    created_at: request.createdAt,
+    updated_at: request.updatedAt,
+  });
+  if (error) throw error;
+}
+
+export async function updateJoinRequestInDb(requestId: string, updates: any): Promise<void> {
+  const { error } = await supabase.from('group_join_requests').update(updates).eq('id', requestId);
+  if (error) throw error;
+}
+
+export async function fetchJoinRequests(): Promise<JoinRequest[]> {
+  const { data, error } = await supabase.from('group_join_requests').select('*');
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id,
+    groupId: r.group_id,
+    userId: r.user_id,
+    status: r.status,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
 }
 
 export async function updateUser(id: string, updates: any): Promise<void> {

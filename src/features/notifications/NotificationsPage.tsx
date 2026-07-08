@@ -5,13 +5,15 @@ import { Button } from '../../components/ui';
 import { FadeUp, StaggerList, StaggerItem } from '../../components/motion';
 import { clsx } from 'clsx';
 
-const TYPE_CONFIG = {
+const TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
   event:        { icon: '📅', color: '#7c3aed' },
   attendance:   { icon: '✅', color: '#10b981' },
   score:        { icon: '🏆', color: '#f59e0b' },
   achievement:  { icon: '🎖️', color: '#f59e0b' },
   announcement: { icon: '📢', color: '#ec4899' },
   reminder:     { icon: '⏰', color: '#8b5cf6' },
+  friend_request: { icon: '👤', color: '#3b82f6' },
+  group_join:     { icon: '👥', color: '#f59e0b' },
 };
 
 function timeAgo(dateStr: string) {

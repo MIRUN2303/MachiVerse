@@ -69,6 +69,18 @@ export interface Group {
   tags: string[];
   upcomingEvents: number;
   totalEvents: number;
+  inviteCode: string;
+}
+
+export type JoinRequestStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface JoinRequest {
+  id: string;
+  groupId: string;
+  userId: string;
+  status: JoinRequestStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GroupMemberStats {
@@ -206,7 +218,7 @@ export interface LeaderboardEntry {
 
 export interface Notification {
   id: string;
-  type: 'event' | 'attendance' | 'score' | 'achievement' | 'announcement' | 'reminder';
+  type: 'event' | 'attendance' | 'score' | 'achievement' | 'announcement' | 'reminder' | 'friend_request' | 'group_join';
   title: string;
   body: string;
   timestamp: string;

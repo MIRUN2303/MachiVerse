@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { SPORT_CONFIG, BADGE_CONFIG } from '../../data/sportConfig';
 import { Avatar, Button } from '../../components/ui';
 import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
+import { useScrollLock } from '../../lib/useScrollLock';
 import { useAppStore } from '../../store/useAppStore';
+import toast from 'react-hot-toast';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SPORT_COLORS = ['#10b981', '#7c3aed', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
@@ -33,18 +35,17 @@ export const ProfilePage: React.FC = () => {
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
   const logout = useAppStore(s => s.logout);
   const user = users.find(u => u.id === currentUserId);
-  const [tab, setTab] = useState('Stats');
-  const [friendsSubTab, setFriendsSubTab] = useState('list');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get('tab') === 'friends' ? 'Friends' : 'Stats');
+  const [friendsSubTab, setFriendsSubTab] = useState(() => searchParams.get('tab') === 'friends' ? 'find' : 'list');
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
-  const [inviteGroupId, setInviteGroupId] = useState('');
   const [badgeInfo, setBadgeInfo] = useState<{ id: string; cfg: any; earned: boolean } | null>(null);
+  const [showInvitePopup, setShowInvitePopup] = useState(false);
 
   const friendships = useAppStore(s => s.friendships);
   const sendFriendRequest = useAppStore(s => s.sendFriendRequest);
   const acceptFriendRequest = useAppStore(s => s.acceptFriendRequest);
-  const inviteByProfileCode = useAppStore(s => s.inviteByProfileCode);
   const groups = useAppStore(s => s.groups);
   const allUsers = useAppStore(s => s.users);
 
@@ -462,6 +463,16 @@ export const ProfilePage: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* INVITE TO GROUP POPUP */}
+      <AnimatePresence>
+        {showInvitePopup && (
+          <InviteToGroupPopup
+            myGroups={myGroups}
+            onClose={() => setShowInvitePopup(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ===== FRIENDS TAB ===== */}
       {tab === 'Friends' && (
         <div className="mt-3 space-y-4">
@@ -628,33 +639,15 @@ export const ProfilePage: React.FC = () => {
 
           {/* INVITE TO GROUP */}
           {friendsSubTab === 'invite' && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block">Select Group</label>
-                <select value={inviteGroupId} onChange={e => setInviteGroupId(e.target.value)}
-                  className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50 appearance-none">
-                  <option value="">Choose a group</option>
-                  {myGroups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block">Friend's Profile Code</label>
-                <input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. ABC001"
-                  className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50" />
-              </div>
-              <Button variant="lime" size="md" fullWidth
-                disabled={!inviteGroupId || !inviteCode.trim()}
-                onClick={() => {
-                  if (inviteByProfileCode(inviteGroupId, inviteCode.trim())) {
-                    setInviteCode('');
-                    setInviteGroupId('');
-                  }
-                }}>
-                Send Invite
-              </Button>
+            <div className="text-center py-8 space-y-4">
+              <p className="text-4xl">📨</p>
+              <p className="text-white/50 text-sm">Send a group invite to a friend</p>
+              <p className="text-white/30 text-xs">Enter their profile code to invite them to a group</p>
+              <button onClick={() => setShowInvitePopup(true)}
+                className="px-6 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
+                style={{ background: 'var(--green)', color: '#080808' }}>
+                Open Invite
+              </button>
             </div>
           )}
         </div>
@@ -723,7 +716,7 @@ const BadgeInfoPopup: React.FC<{
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[200] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.7)' }}
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
       onClick={onClose}
     >
       <motion.div
@@ -731,11 +724,11 @@ const BadgeInfoPopup: React.FC<{
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.88, y: 30 }}
         transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.9 }}
-        className="w-full max-w-sm rounded-3xl p-6 relative overflow-hidden backdrop-blur-xl"
+        className="w-full max-w-sm rounded-3xl p-6 relative overflow-hidden"
         style={{
-          background: `linear-gradient(180deg, ${rarityCfg.color}18, #141414)`,
-          border: `1px solid ${rarityCfg.color}30`,
-          boxShadow: `0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 ${rarityCfg.color}20`,
+          background: `linear-gradient(180deg, ${rarityCfg.color}25, #1a1a1a)`,
+          border: `1px solid ${rarityCfg.color}40`,
+          boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 40px ${rarityCfg.color}15, inset 0 1px 0 ${rarityCfg.color}25`,
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -857,6 +850,81 @@ const BadgeInfoPopup: React.FC<{
             </motion.div>
           )}
         </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// =============================================
+// INVITE TO GROUP POPUP
+// =============================================
+const InviteToGroupPopup: React.FC<{ myGroups: any[]; onClose: () => void }> = ({ myGroups, onClose }) => {
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const inviteByProfileCode = useAppStore(s => s.inviteByProfileCode);
+
+  const handleInvite = () => {
+    if (!selectedGroupId) { toast.error('Select a group'); return; }
+    if (!inviteCodeInput.trim()) { toast.error('Enter a profile code'); return; }
+    const ok = inviteByProfileCode(selectedGroupId, inviteCodeInput.trim());
+    if (ok) { setInviteCodeInput(''); onClose(); }
+  };
+
+  useScrollLock(true);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ duration: 0.15 }}
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-sm flex flex-col"
+        style={{
+          background: '#0f0a1e',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '1.5rem',
+          padding: '1.5rem',
+        }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-white text-lg">Invite to Group</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>✘</button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1.5 block">Select Group</label>
+            <select value={selectedGroupId} onChange={e => setSelectedGroupId(e.target.value)}
+              className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50"
+            >
+              <option value="">Choose a group...</option>
+              {myGroups.map(g => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1.5 block">Friend's Profile Code</label>
+            <input value={inviteCodeInput} onChange={e => setInviteCodeInput(e.target.value)}
+              placeholder="ABC123" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50"
+              onKeyDown={e => e.key === 'Enter' && handleInvite()}
+            />
+          </div>
+
+          <motion.button onClick={handleInvite} whileTap={{ scale: 0.97 }}
+            className="btn-lime w-full py-3 font-black text-sm"
+          >
+            Send Invite →
+          </motion.button>
+        </div>
       </motion.div>
     </motion.div>
   );

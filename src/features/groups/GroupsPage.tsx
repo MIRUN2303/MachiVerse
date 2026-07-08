@@ -11,6 +11,7 @@ import { clsx } from 'clsx';
 import { useAppStore } from '../../store/useAppStore';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
 import toast from 'react-hot-toast';
+import type { Group } from '../../data/types';
 import { useScrollLock } from '../../lib/useScrollLock';
 
 const ROLE_CONFIG = {
@@ -69,7 +70,7 @@ const MemberDropdown: React.FC<{ userId: string; groupId: string; currentUserRol
           )}>
             <Iconic name={roleCfg.icon} size={14} />
           </span>
-          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-white/30 text-sm">Γû╝</motion.span>
+          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-white/30 text-sm">▼</motion.span>
         </div>
       </button>
       <AnimatePresence>
@@ -339,9 +340,8 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
 const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const createGroup = useAppStore(s => s.createGroup);
   const [name, setName] = useState('');
-  const [logo, setLogo] = useState('≡ƒÄ»');
+  const [logo, setLogo] = useState('🎯');
   const [description, setDescription] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
   const [rules, setRules] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
 
@@ -352,7 +352,7 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
       name: name.trim(),
       logo,
       description: description.trim(),
-      isPrivate,
+      isPrivate: true,
       rules: rulesArr.length > 0 ? rulesArr : ['Respect all members', 'Have fun!'],
     });
     if (id) onClose();
@@ -366,32 +366,32 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
       style={{ touchAction: 'none' }}
       onClick={onClose}
     >
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60" />
       <motion.div
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ duration: 0.15 }}
         onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-lg flex flex-col"
+        className="relative w-full max-w-lg flex flex-col h-full"
         style={{
           background: '#0f0a1e',
           border: '1px solid rgba(255,255,255,0.08)',
-          maxHeight: 'min(90dvh, 90vh)',
-          borderRadius: '1.5rem 1.5rem 0 0',
+          maxHeight: 'min(calc(100dvh - 2rem), 85dvh)',
+          borderRadius: '1.5rem',
         }}
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-2 flex-shrink-0">
           <h2 className="font-display font-bold text-white text-lg">Create Group</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>Γ£ò</button>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>✘</button>
         </div>
 
         <div
-          className="flex-1 overflow-y-auto px-6 pb-6 space-y-4"
+          className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 min-h-0"
           style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >
           <div>
@@ -406,7 +406,7 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
             >
               <span className="text-2xl leading-none flex items-center justify-center w-8 h-8">{logo}</span>
               <span className="text-white/40 text-xs flex-1 text-left leading-none">Choose an emoji</span>
-              <motion.span animate={{ rotate: emojiOpen ? 180 : 0 }} className="text-white/30 text-xs leading-none">Γû╛</motion.span>
+              <motion.span animate={{ rotate: emojiOpen ? 180 : 0 }} className="text-white/30 text-xs leading-none">▾</motion.span>
             </button>
             <AnimatePresence>
               {emojiOpen && (
@@ -439,16 +439,6 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
           <div>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block">Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What's this group about?" rows={2} className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50 resize-none" />
-          </div>
-
-          <div className="flex items-center justify-between glass rounded-2xl px-4 py-3 border border-white/10">
-            <div>
-              <p className="text-white text-sm font-semibold">Private group</p>
-              <p className="text-white/30 text-xs">Only invited members can join</p>
-            </div>
-            <button onClick={() => setIsPrivate(!isPrivate)} className={clsx('w-11 h-6 rounded-full transition-all flex items-center flex-shrink-0', isPrivate ? 'bg-[var(--green)]' : 'bg-white/20')}>
-              <div className={clsx('w-5 h-5 rounded-full bg-white transition-all shadow', isPrivate ? 'translate-x-5.5' : 'translate-x-0.5')} />
-            </button>
           </div>
 
           <div>
@@ -523,8 +513,8 @@ export const GroupDetailPage: React.FC = () => {
             );
           })}
           <span className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md"
-            style={{ background: group.isPrivate ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: `1px solid ${group.isPrivate ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'}`, color: group.isPrivate ? '#ef4444' : '#34d399' }}>
-            <Iconic name={group.isPrivate ? 'shield' : 'globe'} size={10} /> {group.isPrivate ? 'Private' : 'Public'}
+            style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.35)', color: '#ef4444' }}>
+            <Iconic name="shield" size={10} /> Private
           </span>
         </div>
       </div>
@@ -644,7 +634,10 @@ export const GroupDetailPage: React.FC = () => {
 
         <AnimatePresence mode="wait">
           {tab === 'Members' && (
-            <motion.div key="members" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-1">
+            <motion.div key="members" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
+              {(myRole === 'creator' || myRole === 'admin') && (
+                <PendingRequestsSection groupId={group.id} />
+              )}
               <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <span><Iconic name="users" size={14} /> Members ({group.members.length})</span>
               </p>
@@ -782,7 +775,7 @@ export const GroupDetailPage: React.FC = () => {
                                     return (
                                       <div key={match.id} className="flex items-center gap-2 rounded-xl p-2 mb-1" style={{ background: 'rgba(255,255,255,0.03)' }}>
                                         <span className={clsx('flex-1 text-xs font-bold text-right', match.winnerId === match.team1Id ? 'text-green-400' : 'text-white/50')}>{p1}</span>
-                                        <span className="font-bold text-white text-sm">{match.score1}ΓÇô{match.score2}</span>
+                                        <span className="font-bold text-white text-sm">{match.score1}–{match.score2}</span>
                                         <span className={clsx('flex-1 text-xs font-bold', match.winnerId === match.team2Id ? 'text-green-400' : 'text-white/50')}>{p2}</span>
                                       </div>
                                     );
@@ -813,6 +806,18 @@ export const GroupDetailPage: React.FC = () => {
 
           {tab === 'Invite' && (
             <motion.div key="invite" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+              <Card padding="md">
+                <p className="font-display font-bold text-white text-sm mb-3 flex items-center gap-1"><Iconic name="link" size={16} /> Group Invite Code</p>
+                <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3">
+                  <span className="text-2xl font-black tracking-widest text-white font-mono">{group.inviteCode || '------'}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(group.inviteCode || ''); toast.success('Code copied!'); }}
+                    className="ml-auto text-xs font-semibold px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                    style={{ background: 'rgba(var(--green-rgb),0.1)', border: '1px solid rgba(var(--green-rgb),0.2)', color: 'var(--green)' }}>
+                    Copy
+                  </button>
+                </div>
+                <p className="text-white/40 text-xs mt-2">Share this code with friends so they can search and request to join</p>
+              </Card>
               <Card padding="md">
                 <p className="font-display font-bold text-white text-sm mb-3 flex items-center gap-1"><Iconic name="send" size={16} /> Invite by Profile Code</p>
                 <p className="text-white/40 text-xs mb-3">Enter a friend's profile code to add them to this group</p>
@@ -907,9 +912,9 @@ export const GroupsPage: React.FC = () => {
   const navigate = useNavigate();
   const currentUserId = useAppStore(s => s.currentUserId);
   const isLoggedIn = useAppStore(s => s.isLoggedIn);
-  const joinGroup = useAppStore(s => s.joinGroup);
   const groups = useAppStore(s => s.groups);
   const [showCreate, setShowCreate] = useState(false);
+  const [showDiscover, setShowDiscover] = useState(false);
 
   // Wire global FAB action
   useEffect(() => {
@@ -920,7 +925,6 @@ export const GroupsPage: React.FC = () => {
   const currentUser = currentUserId ? getUserById(currentUserId) : null;
   const myCreatedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role === 'creator'));
   const myJoinedGroups = groups.filter(g => g.members.some(m => m.userId === currentUserId && m.role !== 'creator'));
-  const discoverGroups = groups.filter(g => !g.members.some(m => m.userId === currentUserId));
   const canCreateMore = currentUser ? currentUser.createdGroups.length < 3 : false;
   const canJoinMore = currentUser ? currentUser.joinedGroups.length < 3 : false;
 
@@ -1037,31 +1041,179 @@ export const GroupsPage: React.FC = () => {
         </StaggerList>
       </FadeUp>
 
-      {discoverGroups.length > 0 && canJoinMore && (
+      {canJoinMore && (
         <FadeUp delay={0.2}>
-          <SectionHeader title={<span><Iconic name="search" size={16} /> Discover Groups</span>} subtitle="Explore and join" className="mb-3" />
-          <StaggerList className="space-y-3">
-            {discoverGroups.map(group => (
-              <StaggerItem key={group.id}>
-                <Card padding="md">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
-                      <span style={{ fontSize: 24 }}>{group.logo}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-white">{group.name}</p>
-                      <p className="text-white/50 text-xs">{group.memberCount} members</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => isLoggedIn ? joinGroup(group.id) : navigate('/login')}>{isLoggedIn ? 'Join' : 'Login to Join'}</Button>
-                  </div>
-                </Card>
-              </StaggerItem>
-            ))}
-          </StaggerList>
+          <div className="flex items-center gap-2">
+            <Button variant="glass" size="sm" icon={<Iconic name="search" size={14} />} onClick={() => setShowDiscover(true)} className="flex-1">
+              Discover Groups by Code
+            </Button>
+          </div>
         </FadeUp>
       )}
 
       <CreateGroupModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <DiscoverGroupsModal open={showDiscover} onClose={() => setShowDiscover(false)} />
+    </div>
+  );
+};
+
+// =============================================
+// DISCOVER GROUPS MODAL
+// =============================================
+const DiscoverGroupsModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const [code, setCode] = useState('');
+  const [foundGroup, setFoundGroup] = useState<Group | null>(null);
+  const findGroupByInviteCode = useAppStore(s => s.findGroupByInviteCode);
+  const sendJoinRequest = useAppStore(s => s.sendJoinRequest);
+  const joinRequests = useAppStore(s => s.joinRequests);
+  const currentUserId = useAppStore(s => s.currentUserId);
+  const navigate = useNavigate();
+
+  useScrollLock(open);
+
+  if (!open) return null;
+
+  const pendingRequest = foundGroup ? joinRequests.find(r => r.groupId === foundGroup.id && r.userId === currentUserId && r.status === 'pending') : null;
+  const acceptedRequest = foundGroup ? joinRequests.find(r => r.groupId === foundGroup.id && r.userId === currentUserId && r.status === 'accepted') : null;
+
+  const handleSearch = () => {
+    if (!code.trim()) { toast.error('Enter a code'); return; }
+    const g = findGroupByInviteCode(code.trim().toUpperCase());
+    if (!g) { toast.error('No group found with that code'); setFoundGroup(null); return; }
+    setFoundGroup(g);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
+      style={{ touchAction: 'none' }}
+      onClick={onClose}
+    >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ duration: 0.15 }}
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-md flex flex-col"
+        style={{
+          background: '#0f0a1e',
+          border: '1px solid rgba(255,255,255,0.08)',
+          maxHeight: 'min(calc(100dvh - 2rem), 85dvh)',
+          borderRadius: '1.5rem',
+        }}
+      >
+        <div className="flex items-center justify-between px-6 pt-5 pb-2 flex-shrink-0">
+          <h2 className="font-display font-bold text-white text-lg">Discover Groups</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all" style={{ background: 'rgba(255,255,255,0.05)' }}>✘</button>
+        </div>
+
+        <div
+          className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 min-h-0"
+          style={{ overscrollBehavior: 'contain' } as React.CSSProperties}
+        >
+          <div>
+            <label className="text-white/50 text-xs font-semibold mb-1.5 block">Enter Group Invite Code</label>
+            <div className="flex gap-2">
+              <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setFoundGroup(null); }}
+                placeholder="ABC123" maxLength={6}
+                className="flex-1 glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50 uppercase tracking-widest font-mono font-bold"
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+              <motion.button onClick={handleSearch} whileTap={{ scale: 0.95 }}
+                className="px-4 py-3 rounded-2xl text-sm font-bold"
+                style={{ background: 'var(--green)', color: '#080808' }}>
+                Search
+              </motion.button>
+            </div>
+          </div>
+
+          {foundGroup && (
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ fontSize: 24 }}>{foundGroup.logo}</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-white">{foundGroup.name}</p>
+                  <p className="text-white/50 text-xs">{foundGroup.memberCount} members · {foundGroup.description}</p>
+                </div>
+              </div>
+
+              {acceptedRequest ? (
+                <motion.button onClick={() => { onClose(); navigate(`/groups/${foundGroup.id}`); }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-2.5 rounded-2xl text-sm font-bold transition-all"
+                  style={{ background: 'rgba(var(--green-rgb),0.1)', border: '1px solid rgba(var(--green-rgb),0.2)', color: 'var(--green)' }}>
+                  ✓ Accepted — Go to Group
+                </motion.button>
+              ) : pendingRequest ? (
+                <div className="w-full py-2.5 rounded-2xl text-sm font-bold text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
+                  Request Sent — Waiting for admin approval
+                </div>
+              ) : (
+                <motion.button onClick={() => { sendJoinRequest(foundGroup.id); }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-2.5 rounded-2xl text-sm font-bold transition-all"
+                  style={{ background: 'var(--green)', color: '#080808' }}>
+                  Send Join Request
+                </motion.button>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// =============================================
+// PENDING REQUESTS SECTION
+// =============================================
+const PendingRequestsSection: React.FC<{ groupId: string }> = ({ groupId }) => {
+  const joinRequests = useAppStore(s => s.joinRequests);
+  const acceptJoinRequest = useAppStore(s => s.acceptJoinRequest);
+  const rejectJoinRequest = useAppStore(s => s.rejectJoinRequest);
+  const users = useAppStore(s => s.users);
+
+  const pending = joinRequests.filter(r => r.groupId === groupId && r.status === 'pending');
+
+  if (pending.length === 0) return null;
+
+  return (
+    <div className="space-y-1 mb-3">
+      <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <Iconic name="alert_triangle" size={14} /> Pending Requests ({pending.length})
+      </p>
+      {pending.map(req => {
+        const user = users.find((u: any) => u.id === req.userId);
+        return (
+          <div key={req.id} className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)' }}>
+            <Avatar src={user?.avatar} name={user?.name || '?'} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-white text-sm">{user?.name || 'Unknown'}</p>
+              <p className="text-white/40 text-xs">@{user?.username || '?'}</p>
+            </div>
+            <div className="flex gap-1.5">
+              <motion.button onClick={() => acceptJoinRequest(req.id)}
+                whileTap={{ scale: 0.9 }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold"
+                style={{ background: 'rgba(var(--green-rgb),0.15)', color: 'var(--green)' }}
+                title="Accept">
+                ✓
+              </motion.button>
+              <motion.button onClick={() => rejectJoinRequest(req.id)}
+                whileTap={{ scale: 0.9 }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold"
+                style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}
+                title="Reject">
+                ✕
+              </motion.button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

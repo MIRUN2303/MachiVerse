@@ -8,7 +8,7 @@ class ConnectionManager {
   private _checking = false;
   private listeners: ConnectionListener[] = [];
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
-  private toastShown = false;
+  private hasConnectedOnce = false;
 
   get connected() { return this._connected; }
 
@@ -31,22 +31,8 @@ class ConnectionManager {
       const wasConnected = this._connected;
       this._connected = ok;
 
-      if (ok && !wasConnected && !this.toastShown) {
-        toast.success('Connected to WhosIn', {
-          style: {
-            background: 'rgba(34,212,91,0.12)',
-            color: '#22d45b',
-            border: '1px solid rgba(34,212,91,0.25)',
-            borderRadius: '14px',
-            backdropFilter: 'blur(16px)',
-          },
-          icon: '⚡',
-          duration: 3000,
-        });
-        this.toastShown = false;
-      }
-
-      if (!ok && wasConnected) {
+      // Only show "connection lost" toast after we've had a confirmed connection at least once
+      if (!ok && wasConnected && this.hasConnectedOnce) {
         toast.error('Connection lost — using offline mode', {
           style: {
             background: 'rgba(248,113,113,0.12)',
@@ -57,8 +43,9 @@ class ConnectionManager {
           },
           duration: 5000,
         });
-        this.toastShown = true;
       }
+
+      if (ok) this.hasConnectedOnce = true;
 
       this.notify();
       return ok;
