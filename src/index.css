@@ -275,6 +275,15 @@ body {
 .btn-amber:hover { box-shadow: 0 4px 24px rgba(var(--amber-rgb), 0.45); transform: translateY(-1px); }
 .btn-amber:active { transform: scale(0.97); }
 
+.btn-lime {
+  background: var(--green); color: #080808; font-weight: 700;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 2px 16px rgba(var(--green-rgb), 0.30);
+}
+.btn-lime:hover { background: var(--green-bright); box-shadow: 0 4px 24px rgba(var(--green-rgb), 0.40); transform: translateY(-1px); }
+.btn-lime:active { transform: scale(0.97); }
+
 .btn-ghost {
   background: transparent; color: var(--text-secondary);
   border: 1px solid var(--border-medium); border-radius: var(--radius-lg);

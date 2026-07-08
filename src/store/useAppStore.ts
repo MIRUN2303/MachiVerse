@@ -6,6 +6,94 @@ import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
 
+async function computeAllUserStats(events: Event[], set: any, get: any) {
+  const users = get().users;
+  if (!users.length) return;
+
+  const updated = users.map((user: any) => {
+    const completedEvents = events.filter(e =>
+      e.status === 'completed' &&
+      e.attendance.some(a => a.userId === user.id && a.status === 'coming')
+    );
+
+    let totalMatches = 0, wins = 0, losses = 0;
+    const weekly = [0, 0, 0, 0, 0, 0, 0];
+    const monthly: Record<string, { matches: number; wins: number }> = {};
+    const sports: Record<string, { matches: number; wins: number }> = {};
+    const chrono: { isWin: boolean }[] = [];
+
+    for (const ev of completedEvents) {
+      const m = ev.date.slice(0, 7);
+      if (!monthly[m]) monthly[m] = { matches: 0, wins: 0 };
+      if (!sports[ev.sport]) sports[ev.sport] = { matches: 0, wins: 0 };
+
+      for (const league of ev.leagues) {
+        for (const match of league.matches) {
+          if (!match.winnerId || !match.completedAt) continue;
+          const t1 = league.teams.find(t => t.id === match.team1Id);
+          const t2 = league.teams.find(t => t.id === match.team2Id);
+          if (!t1 || !t2) continue;
+          const on1 = t1.playerIds.includes(user.id);
+          const on2 = t2.playerIds.includes(user.id);
+          if (!on1 && !on2) continue;
+
+          totalMatches++;
+          sports[ev.sport].matches++;
+          const w = (on1 && match.winnerId === t1.id) || (on2 && match.winnerId === t2.id);
+          if (w) { wins++; sports[ev.sport].wins++; } else losses++;
+          weekly[new Date(match.completedAt).getDay()]++;
+          monthly[m].matches++;
+          if (w) monthly[m].wins++;
+          chrono.push({ isWin: w });
+        }
+      }
+    }
+
+    let curStreak = 0, longestStreak = 0, run = 0;
+    for (const c of chrono) {
+      if (c.isWin) { run++; longestStreak = Math.max(longestStreak, run); }
+      else run = 0;
+    }
+    for (let i = chrono.length - 1; i >= 0; i--) {
+      if (chrono[i].isWin) curStreak++;
+      else break;
+    }
+
+    const myEvents = events.filter(e => e.attendance.some(a => a.userId === user.id));
+    const responded = myEvents.filter(e => e.attendance.some(a => a.userId === user.id && a.status));
+    const comingCount = myEvents.filter(e => e.attendance.some(a => a.userId === user.id && a.status === 'coming'));
+    const attRate = responded.length > 0 ? Math.round((comingCount.length / responded.length) * 100) : 0;
+    const mvpCount = completedEvents.filter(e => e.mvps?.some((m: any) => m.userId === user.id)).length;
+    const pts = wins * 10 + mvpCount * 25;
+    const wr = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+
+    return {
+      ...user,
+      stats: {
+        totalMatches, wins, losses, winRate: wr, attendanceRate: attRate,
+        currentStreak: curStreak, longestStreak,
+        pointsTotal: pts, mvpCount,
+        weeklyActivity: weekly,
+        monthlyActivity: Object.entries(monthly).map(([month, d]) => ({ month, matches: d.matches, wins: d.wins })),
+        sportBreakdown: Object.entries(sports).map(([sport, d]) => ({ sport: sport as any, matches: d.matches, wins: d.wins })),
+      },
+    };
+  });
+
+  set((s: any) => ({ users: updated }));
+  for (const u of updated) {
+    try {
+      await db.updateUser(u.id, {
+        total_matches: u.stats.totalMatches, wins: u.stats.wins, losses: u.stats.losses,
+        win_rate: u.stats.winRate, attendance_rate: u.stats.attendanceRate,
+        current_streak: u.stats.currentStreak, longest_streak: u.stats.longestStreak,
+        weekly_activity: u.stats.weeklyActivity, points_total: u.stats.pointsTotal,
+        mvp_count: u.stats.mvpCount,
+      });
+    } catch (e) { console.warn('Stats save fail', u.id, e); }
+  }
+}
+
 /** Construct a minimal user profile from auth metadata when no DB row exists. */
 function fallbackUser(authUser: any): any {
   const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
@@ -222,6 +310,7 @@ export const useAppStore = create<AppState>()(
           const isLoggedIn = !!authUser;
           const needsPhone = isLoggedIn && (!currentUser || !currentUser.phone);
           set({ events, groups, notifications, friendships, stories, users: allUsers, loaded: true, isLoggedIn, currentUserId, needsPhone });
+          computeAllUserStats(events, set, get);
         } catch (e) {
           console.warn('Supabase load failed, using empty state', e);
           // Preserve existing isLoggedIn so a network hiccup doesn't log the user out
@@ -537,6 +626,8 @@ export const useAppStore = create<AppState>()(
         }));
         db.updateEventInDb(eventId, { status: 'completed', rankings, mvps })
           .catch(e => console.warn('Failed to complete event', e));
+        const allEvents = get().events;
+        computeAllUserStats(allEvents, set, get);
       },
 
       cancelEvent: (eventId) => {
