@@ -6,20 +6,6 @@ import { useAppStore } from '../../store/useAppStore';
 // Cinematic ease — controlled, no bounce
 const CINEMATIC = [0.22, 1, 0.36, 1] as const;
 
-// =============================================
-// PROPRIETARY LOGO ANIMATION — WhosIn
-// =============================================
-// Based on logo analysis:
-// • "Whos" + "I"(hero) + "n" — asymmetric, modern display type
-// • "I" is electric green, larger, glowing — the brand signature
-// • Wide tracking (0.08em) — premium sport aesthetic
-// • Tagline: "Play. Compete. Conquer." — three-beat competitive rhythm
-//
-// The animation treats the "I" as a power source:
-// letters assemble left→right, the "I" snaps with an electric
-// discharge, then a light sweep crosses the finished mark.
-// =============================================
-
 type Phase = 'curtain' | 'build' | 'flash' | 'sweep' | 'tagline' | 'out';
 
 export const IntroPage: React.FC = () => {
@@ -40,20 +26,17 @@ export const IntroPage: React.FC = () => {
 
   useEffect(() => {
     if (!loaded) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const schedule: [number, Phase][] = [
-      [500, 'build'],      // anticipation → letter reveal
-      [1100, 'flash'],     // letters visible → "I" flash
-      [1600, 'sweep'],     // flash done → light sweep
-      [2150, 'tagline'],   // sweep done → tagline
-      [2800, 'out'],       // hold → transition out
+      [500, 'build'],
+      [1100, 'flash'],
+      [1600, 'sweep'],
+      [2150, 'tagline'],
+      [2800, 'out'],
     ];
     const timers = schedule.map(([delay, p]) =>
       setTimeout(() => setPhase(p as Phase), delay)
     );
-    // Fade page out at 2.9s
     const fadeTimer = setTimeout(() => setPageOpacity(0), 2900);
-    // Navigate at 3.2s
     const navTimer = setTimeout(() => navigate(target, { replace: true }), 3200);
 
     return () => { timers.forEach(clearTimeout); clearTimeout(fadeTimer); clearTimeout(navTimer); };
@@ -65,8 +48,38 @@ export const IntroPage: React.FC = () => {
       animate={{ opacity: pageOpacity }}
       transition={{ duration: 0.35, ease: CINEMATIC }}
     >
-      {/* Deep background */}
-      <div className="absolute inset-0" style={{ background: '#080808' }} />
+      {/* Background image — mobile hidden below sm, desktop visible from sm up */}
+      <motion.div
+        className="absolute inset-0 sm:hidden"
+        initial={{ opacity: 0, scale: 1.12 }}
+        animate={{
+          opacity: phase === 'out' ? 0 : 0.5,
+          scale: phase === 'out' ? 1.08 : 1,
+        }}
+        transition={{ duration: 1.6, ease: CINEMATIC }}
+        style={{
+          backgroundImage: 'url(/intro-bg/mobile.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      <motion.div
+        className="absolute inset-0 max-sm:hidden"
+        initial={{ opacity: 0, scale: 1.12 }}
+        animate={{
+          opacity: phase === 'out' ? 0 : 0.5,
+          scale: phase === 'out' ? 1.08 : 1,
+        }}
+        transition={{ duration: 1.6, ease: CINEMATIC }}
+        style={{
+          backgroundImage: 'url(/intro-bg/desktop.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+
+      {/* Dark overlay so text stays readable */}
+      <div className="absolute inset-0" style={{ background: 'rgba(8,8,8,0.55)' }} />
 
       {/* Ambient glow — builds from center */}
       <motion.div
