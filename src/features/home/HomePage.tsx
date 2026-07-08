@@ -9,6 +9,7 @@ import { Iconic } from '../../components/ui/icons';
 import { FadeUp } from '../../components/motion';
 import { useFabStore } from '../../components/layout/Navigation';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
+import toast from 'react-hot-toast';
 import type { Event } from '../../data/types';
 
 // =============================================
@@ -87,6 +88,10 @@ const GroupEventCard: React.FC<{
             </div>
             <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
               <Iconic name={event.weather.icon} size={14} /> {event.weather.temp}°
+              <button onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}/events/${event.id}`; if (navigator.share) navigator.share({ url }).catch(() => {}); else navigator.clipboard.writeText(url).then(() => toast.success('Link copied!')).catch(() => {}); }}
+                className="ml-1 text-white/30 hover:text-white/60 transition-colors active:scale-90">
+                <Iconic name="share" size={14} />
+              </button>
             </div>
           </div>
 
@@ -195,6 +200,10 @@ const GroupEventCard: React.FC<{
       </div>
 
       <div className="text-right flex-shrink-0 flex items-center gap-2">
+        <button onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}/events/${event.id}`; if (navigator.share) navigator.share({ url }).catch(() => {}); else navigator.clipboard.writeText(url).then(() => toast.success('Link copied!')).catch(() => {}); }}
+          className="text-white/20 hover:text-white/50 transition-colors active:scale-90">
+          <Iconic name="share" size={16} />
+        </button>
         {myStatus ? (
           <span className="text-xs">{myStatus === 'coming' ? <Iconic name="check_circle" size={16} /> : <Iconic name="x_circle" size={16} />}</span>
         ) : (

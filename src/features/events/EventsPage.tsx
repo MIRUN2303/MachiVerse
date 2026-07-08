@@ -9,6 +9,7 @@ import { Iconic } from '../../components/ui/icons';
 import { StaggerList, StaggerItem, FadeUp } from '../../components/motion';
 import { ImageLightbox } from '../../components/media/ImageLightbox';
 import { CreateEventSheet } from '../../components/events/CreateEventSheet';
+import toast from 'react-hot-toast';
 import type { AttendanceStatus } from '../../data/types';
 
 const ATTENDANCE_OPTIONS: { status: AttendanceStatus; label: string; icon: string; color: string }[] = [
@@ -27,6 +28,7 @@ export const EventDetailPage: React.FC = () => {
   const updateAttendance = useAppStore(s => s.updateAttendance);
   const uploadEventImage = useAppStore(s => s.uploadEventImage);
   const currentUserId = useAppStore(s => s.currentUserId);
+  const isLoggedIn = useAppStore(s => s.isLoggedIn);
   const createLeague = useAppStore(s => s.createLeague);
   const addMatch = useAppStore(s => s.addMatch);
   const updateMatchScore = useAppStore(s => s.updateMatchScore);
@@ -68,6 +70,11 @@ export const EventDetailPage: React.FC = () => {
   const groups = useAppStore(s => s.groups);
   const group = event ? groups.find(g => g.id === event.groupId) : null;
   const groupMember = group ? group.members.find(m => m.userId === currentUserId) : null;
+
+  useEffect(() => {
+    if (!isLoggedIn && event) navigate('/login');
+  }, [isLoggedIn, event]);
+
   const isEventAdmin = event && (
     event.organizer === currentUserId ||
     groupMember?.role === 'creator' ||
@@ -148,7 +155,13 @@ export const EventDetailPage: React.FC = () => {
             <div className="flex items-start gap-3">
               <SportOrb emoji={sportCfg.emoji} color={sportCfg.color} bg={sportCfg.bg} size="md" />
               <div className="flex-1">
-                <h1 className="font-display font-black text-xl text-white leading-tight">{event.title}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-display font-black text-xl text-white leading-tight">{event.title}</h1>
+                  <button onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}/events/${event.id}`; if (navigator.share) navigator.share({ url }).catch(() => {}); else navigator.clipboard.writeText(url).then(() => toast.success('Link copied!')).catch(() => {}); }}
+                    className="text-white/30 hover:text-white/60 transition-colors active:scale-90 flex-shrink-0">
+                    <Iconic name="share" size={20} />
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                   <p className="text-white/60 text-sm flex items-center gap-1"><Iconic name="calendar" size={14} /> {format(parseISO(event.date), 'EEEE, MMM d')}</p>
                   <p className="text-white/60 text-sm flex items-center gap-1"><Iconic name="clock" size={14} /> {event.time} – {event.endTime}</p>
@@ -960,8 +973,15 @@ export const EventsPage: React.FC = () => {
                     {event.isRecurring && <Badge variant="glass"><Iconic name="refresh" size={12} /></Badge>}
                     {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <Badge variant="glass"><span style={{ fontSize: 12 }}>{g.logo}</span> {g.name}</Badge> : null; })()}
                   </div>
-                  <div className="absolute top-3 right-3 glass rounded-xl px-2 py-1 text-xs text-white">
-                    <Iconic name={event.weather.icon} size={14} /> {event.weather.temp}°
+                  <div className="absolute top-3 right-3 flex gap-1.5">
+                    <button onClick={(e) => { e.stopPropagation(); const url = `${window.location.origin}/events/${event.id}`; if (navigator.share) navigator.share({ url }).catch(() => {}); else navigator.clipboard.writeText(url).then(() => toast.success('Link copied!')).catch(() => {}); }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white/60 hover:text-white transition-colors active:scale-90"
+                      style={{ background: 'rgba(0,0,0,0.5)' }}>
+                      <Iconic name="share" size={14} />
+                    </button>
+                    <div className="glass rounded-xl px-2 py-1 text-xs text-white">
+                      <Iconic name={event.weather.icon} size={14} /> {event.weather.temp}°
+                    </div>
                   </div>
                 </div>
                 <div className="p-4 flex items-start gap-3">
