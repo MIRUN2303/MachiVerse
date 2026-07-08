@@ -87,6 +87,7 @@ interface CreateLiveEventInput {
 
 interface CreateGroupInput {
   name: string;
+  logo?: string;
   description: string;
   isPrivate: boolean;
   rules: string[];
@@ -663,7 +664,7 @@ export const useAppStore = create<AppState>()(
 
         const newId = gid();
         const newGroup: Group = {
-          id: newId, name: input.name, logo: '🎯',
+          id: newId, name: input.name, logo: input.logo || '🎯',
           banner: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
           description: input.description, memberCount: 1,
           members: [{ userId: currentUserId, role: 'creator', joinedAt: new Date().toISOString().split('T')[0], stats: { matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, attendanceRate: 0, currentStreak: 0, points: 0 } }],

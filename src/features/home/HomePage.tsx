@@ -76,7 +76,7 @@ const GroupEventCard: React.FC<{
           {/* Group breadcrumb + live dot */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {group?.logo && <Iconic name={group.logo} size={20} />}
+              {group?.logo && <span style={{ fontSize: 20 }}>{group.logo}</span>}
               <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>{group?.name}</span>
               {event.isRecurring && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -186,7 +186,7 @@ const GroupEventCard: React.FC<{
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>{group?.logo && <Iconic name={group.logo} size={14} />} {group?.name}</span>
+          <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>{group?.logo && <span style={{ fontSize: 14 }}>{group.logo}</span>} {group?.name}</span>
         </div>
         <p className="font-bold text-white text-sm truncate">{event.title}</p>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -390,7 +390,7 @@ export const HomePage: React.FC = () => {
                 <div className="h-20 relative overflow-hidden">
                   <img src={group.banner} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent, #111)' }} />
-                  <span className="absolute top-2 left-2">{group.logo && <Iconic name={group.logo} size={24} />}</span>
+                  <span className="absolute top-2 left-2">{group.logo && <span style={{ fontSize: 24 }}>{group.logo}</span>}</span>
                   {nextEvent && (
                     <span className="absolute top-2 right-2 w-2 h-2 rounded-full pulse-lime"
                       style={{ background: 'var(--green)' }} />

@@ -18,7 +18,7 @@ const ROLE_CONFIG = {
   member: { label: 'Member', color: '#6b7280', icon: 'lightning' },
 };
 
-const LOGO_OPTIONS = ['badminton', 'cricket', 'football', 'pickleball', 'volleyball', 'basketball', 'running', 'cycling', 'trekking', 'swimming', 'movie', 'cafe', 'roadtrip', 'gaming', 'boardgames', 'custom', 'target'];
+const LOGO_EMOJIS = ['🏸', '🏏', '⚽', '🏓', '🏐', '🏀', '🏃', '🚴', '🥾', '🏊', '🎬', '☕', '🚗', '🎮', '🎲', '🎯', '💪', '🧘', '🏋️', '⛰️', '🏕️', '🍕', '🎵', '🎨', '📸', '🌮', '🍔', '🧑‍🍳', '🎤', '🎧', '🏄', '🛹', '🥊', '🤸', '⛳', '🎿'];
 
 // =============================================
 // SPORT BADGE
@@ -351,7 +351,7 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
 const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const createGroup = useAppStore(s => s.createGroup);
   const [name, setName] = useState('');
-  const [logo, setLogo] = useState('target');
+  const [logo, setLogo] = useState('🎯');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [rules, setRules] = useState('');
@@ -361,6 +361,7 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
     const rulesArr = rules.split('\n').filter(r => r.trim());
     const id = createGroup({
       name: name.trim(),
+      logo,
       description: description.trim(),
       isPrivate,
       rules: rulesArr.length > 0 ? rulesArr : ['Respect all members', 'Have fun!'],
@@ -393,12 +394,18 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Weekend Crew" className="w-full glass rounded-2xl px-4 py-3 text-white text-sm outline-none border border-white/10 focus:border-[var(--green)]/50" />
           </div>
           <div>
-            <label className="text-white/50 text-xs font-semibold mb-1 block">Logo / Emoji</label>
+            <label className="text-white/50 text-xs font-semibold mb-1 block">Group Emoji</label>
             <div className="flex flex-wrap gap-1.5">
-              {LOGO_OPTIONS.map(em => (
-                <button key={em} onClick={() => setLogo(em)}
-                  className={clsx('w-10 h-10 rounded-xl transition-all', logo === em ? 'bg-white/10 border border-white/20' : 'border border-transparent hover:bg-white/5')}
-                ><Iconic name={em} size={22} /></button>
+              {LOGO_EMOJIS.map(em => (
+                <button key={em} type="button" onClick={() => setLogo(em)}
+                  className={clsx(
+                    'w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all',
+                    logo === em
+                      ? 'scale-110 shadow-lg'
+                      : 'opacity-50 hover:opacity-80 hover:scale-105',
+                  )}
+                  style={logo === em ? { background: 'rgba(var(--green-rgb),0.15)', border: '2px solid var(--green)', boxShadow: '0 0 12px rgba(var(--green-rgb),0.3)' } : {}}
+                >{em}</button>
               ))}
             </div>
           </div>
@@ -475,7 +482,7 @@ export const GroupDetailPage: React.FC = () => {
         <FadeUp>
           <div className="flex items-start gap-3">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center border-2 border-white/20 shadow-lg flex-shrink-0 glass">
-              <Iconic name={group.logo} size={32} />
+              <span style={{ fontSize: 32 }}>{group.logo}</span>
             </div>
             <div className="flex-1">
               <h1 className="font-display font-black text-xl text-white">{group.name}</h1>
@@ -863,7 +870,7 @@ export const GroupsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
                   <div className="absolute inset-0 p-4 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
-                      <Iconic name={group.logo} size={24} />
+                      <span style={{ fontSize: 24 }}>{group.logo}</span>
                     </div>
                     <div>
                       <p className="font-display font-bold text-white">{group.name}</p>
@@ -895,7 +902,7 @@ export const GroupsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0f0a1e]/80 to-transparent" />
                   <div className="absolute inset-0 p-4 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
-                      <Iconic name={group.logo} size={24} />
+                      <span style={{ fontSize: 24 }}>{group.logo}</span>
                     </div>
                     <div>
                       <p className="font-display font-bold text-white">{group.name}</p>
@@ -924,7 +931,7 @@ export const GroupsPage: React.FC = () => {
                 <Card padding="md">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 glass">
-                      <Iconic name={group.logo} size={24} />
+                      <span style={{ fontSize: 24 }}>{group.logo}</span>
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-white">{group.name}</p>

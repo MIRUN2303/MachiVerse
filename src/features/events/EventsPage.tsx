@@ -925,7 +925,7 @@ export const EventsPage: React.FC = () => {
                       {event.status === 'upcoming' ? <><Iconic name="lightning" size={12} /> Upcoming</> : event.status === 'live' ? <><Iconic name="live" size={12} /> Live</> : event.status === 'paused' ? <><Iconic name="pause" size={12} /> Paused</> : event.status === 'cancelled' ? <><Iconic name="x" size={12} /> Cancelled</> : <><Iconic name="check" size={12} /> Done</>}
                     </Badge>
                     {event.isRecurring && <Badge variant="glass"><Iconic name="refresh" size={12} /></Badge>}
-                    {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <Badge variant="glass"><Iconic name={g.logo} size={12} /> {g.name}</Badge> : null; })()}
+                    {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <Badge variant="glass"><span style={{ fontSize: 12 }}>{g.logo}</span> {g.name}</Badge> : null; })()}
                   </div>
                   <div className="absolute top-3 right-3 glass rounded-xl px-2 py-1 text-xs text-white">
                     <Iconic name={event.weather.icon} size={14} /> {event.weather.temp}°
@@ -935,7 +935,7 @@ export const EventsPage: React.FC = () => {
                   <SportOrb emoji={cfg.emoji} color={cfg.color} bg={cfg.bg} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-white/40 text-xs font-medium mb-0.5">
-                      {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <><Iconic name={g.logo} size={14} /> {g.name}</> : ''; })()}
+                      {(() => { const g = groups.find(gr => gr.id === event.groupId); return g ? <><span style={{ fontSize: 14 }}>{g.logo}</span> {g.name}</> : ''; })()}
                     </p>
                     <p className="font-display font-bold text-white truncate">{event.title}</p>
                     <p className="text-white/50 text-xs mt-0.5">
