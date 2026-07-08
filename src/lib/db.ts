@@ -1,4 +1,4 @@
-import { supabaseNoAuth } from './supabase';
+import { supabase, supabaseNoAuth } from './supabase';
 import type {
   User, Group, GroupMember, Event, League, Team, Match,
   AttendanceRecord, Notification, Friendship, Story, JoinRequest,
@@ -208,13 +208,13 @@ export async function updateUser(id: string, updates: any): Promise<void> {
   }
   const promises: Promise<{ error: any }>[] = [];
   if (Object.keys(profileUpdates).length > 0) {
-    promises.push(supabaseNoAuth.from('profiles').update(profileUpdates).eq('id', id) as any);
+    promises.push(supabase.from('profiles').update(profileUpdates).eq('id', id) as any);
   }
   if (Object.keys(statsUpdates).length > 0) {
-    promises.push(supabaseNoAuth.from('user_stats').upsert({ user_id: id, ...statsUpdates, updated_at: now() }) as any);
+    promises.push(supabase.from('user_stats').upsert({ user_id: id, ...statsUpdates, updated_at: now() }) as any);
   }
   if (Object.keys(levelUpdates).length > 0) {
-    promises.push(supabaseNoAuth.from('user_levels').upsert({ user_id: id, ...levelUpdates, updated_at: now() }) as any);
+    promises.push(supabase.from('user_levels').upsert({ user_id: id, ...levelUpdates, updated_at: now() }) as any);
   }
   if (promises.length === 0) return;
   const results = await Promise.all(promises);
