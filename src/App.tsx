@@ -17,6 +17,7 @@ import { IntroPage } from './features/intro/IntroPage';
 import { StoriesPage } from './features/stories/StoriesPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
+import { InstallPrompt } from './components/InstallPrompt';
 
 // ===== Energetic page transition with spring physics =====
 const pageVariants = {
@@ -116,6 +117,9 @@ const AppContent: React.FC = () => {
       {/* FAB — always above nav, never affected by page transforms */}
       {!isAuthPage && <FAB />}
       {!isAuthPage && <BottomNav />}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
 
       {/* Premium dark toast styling */}
       <Toaster
