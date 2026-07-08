@@ -525,6 +525,11 @@ export async function updateFriendshipInDb(id: string, updates: any): Promise<vo
   if (error) throw error;
 }
 
+export async function deleteFriendshipInDb(id: string): Promise<void> {
+  const { error } = await supabaseNoAuth.from('friendships').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // =============================================
 // STORIES
 // =============================================

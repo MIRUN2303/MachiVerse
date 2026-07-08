@@ -33,8 +33,26 @@ export const NotificationsPage: React.FC = () => {
   const markRead = useAppStore(s => s.markNotificationRead);
   const markAllRead = useAppStore(s => s.markAllRead);
   const currentUserId = useAppStore(s => s.currentUserId);
+  const acceptGroupInvite = useAppStore(s => s.acceptGroupInvite);
+  const declineGroupInvite = useAppStore(s => s.declineGroupInvite);
+  const markNotificationRead = useAppStore(s => s.markNotificationRead);
+
   const myNotifications = notifications.filter(n => !n.userId || n.userId === currentUserId);
   const unread = myNotifications.filter(n => !n.read).length;
+
+  const handleAcceptGroup = (notifId: string, actionUrl: string) => {
+    const parts = actionUrl.split(':');
+    if (parts.length < 3) return;
+    const groupId = parts[1];
+    const inviterId = parts[2];
+    acceptGroupInvite(groupId, inviterId);
+    markNotificationRead(notifId);
+  };
+
+  const handleDeclineGroup = (notifId: string) => {
+    declineGroupInvite();
+    markNotificationRead(notifId);
+  };
 
   return (
     <div className="page-container !pb-24 space-y-4">
@@ -79,6 +97,20 @@ export const NotificationsPage: React.FC = () => {
                   </p>
                   <p className="text-white/50 text-xs mt-0.5 line-clamp-2">{notif.body}</p>
                   <p className="text-white/30 text-xs mt-1">{timeAgo(notif.timestamp)}</p>
+                  {notif.type === 'group_join' && !notif.read && (
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={(e) => { e.stopPropagation(); handleAcceptGroup(notif.id, notif.actionUrl || ''); }}
+                        className="text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all active:scale-95"
+                        style={{ background: 'var(--green)', color: '#080808' }}>
+                        Accept
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeclineGroup(notif.id); }}
+                        className="text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all active:scale-95"
+                        style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                        Decline
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {!notif.read && (
                   <span className="w-2 h-2 bg-violet-400 rounded-full flex-shrink-0 mt-1" />

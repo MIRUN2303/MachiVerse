@@ -47,6 +47,8 @@ export const ProfilePage: React.FC = () => {
   const friendships = useAppStore(s => s.friendships);
   const sendFriendRequest = useAppStore(s => s.sendFriendRequest);
   const acceptFriendRequest = useAppStore(s => s.acceptFriendRequest);
+  const cancelFriendRequest = useAppStore(s => s.cancelFriendRequest);
+  const removeFriend = useAppStore(s => s.removeFriend);
   const groups = useAppStore(s => s.groups);
   const allUsers = useAppStore(s => s.users);
 
@@ -546,7 +548,11 @@ export const ProfilePage: React.FC = () => {
                           <p className="font-semibold text-white text-sm">{friendUser.name}</p>
                           <p className="text-white/30 text-xs">Request sent</p>
                         </div>
-                        <span className="text-[10px] text-white/30">Pending</span>
+                        <button onClick={() => cancelFriendRequest(f.id)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                          style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                          Cancel
+                        </button>
                       </div>
                     );
                   })}
@@ -568,15 +574,26 @@ export const ProfilePage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {friends.map(friend => (
-                    <div key={friend.id} className="flex items-center gap-3 glass rounded-2xl p-3">
-                      <Avatar src={friend.avatar} name={friend.name} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white text-sm">{friend.name}</p>
-                        <p className="text-white/30 text-xs">@{friend.username} · {friend.stats.totalMatches} matches</p>
+                  {friends.map(friend => {
+                    const fs = friendships.find(f =>
+                      (f.userId === currentUserId && f.friendId === friend.id) ||
+                      (f.friendId === currentUserId && f.userId === friend.id)
+                    );
+                    return (
+                      <div key={friend.id} className="flex items-center gap-3 glass rounded-2xl p-3">
+                        <Avatar src={friend.avatar} name={friend.name} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-white text-sm">{friend.name}</p>
+                          <p className="text-white/30 text-xs">@{friend.username} · {friend.stats.totalMatches} matches</p>
+                        </div>
+                        <button onClick={() => fs && removeFriend(fs.id)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95"
+                          style={{ background: 'rgba(239,68,68,0.1)', color: 'rgba(239,68,68,0.6)' }}>
+                          Unfriend
+                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

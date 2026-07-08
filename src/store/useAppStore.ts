@@ -274,6 +274,10 @@ interface AppState {
   friendships: Friendship[];
   sendFriendRequest: (friendId: string) => void;
   acceptFriendRequest: (friendshipId: string) => void;
+  cancelFriendRequest: (friendshipId: string) => void;
+  removeFriend: (friendshipId: string) => void;
+  acceptGroupInvite: (groupId: string, inviterId: string) => void;
+  declineGroupInvite: () => void;
   uploadStory: (imageUrl: string, caption?: string) => void;
   deleteStory: (storyId: string) => void;
   getActiveStories: (userId: string) => Story[];
@@ -889,6 +893,27 @@ export const useAppStore = create<AppState>()(
         if (invitedUser.joinedGroups.length >= 3) { toast.error('User has reached their join limit (3)'); return false; }
         if (invitedUser.joinedGroups.includes(groupId) || invitedUser.createdGroups.includes(groupId)) { toast.error('User is already a member'); return false; }
 
+        get().addNotification({
+          title: 'Group Invite',
+          body: `${user.name} invited you to join "${group.name}"`,
+          type: 'group_join',
+          userId: invitedUser.id,
+          actionUrl: `group_invite:${groupId}:${currentUserId}`,
+          read: false,
+        });
+
+        toast.success(`Invitation sent to ${invitedUser.name}!`);
+        return true;
+      },
+
+      acceptGroupInvite: (groupId, inviterId) => {
+        const currentUserId = get().currentUserId;
+        if (!currentUserId) return;
+        const invitedUser = get().users.find((u: any) => u.id === currentUserId);
+        const group = get().groups.find(g => g.id === groupId);
+        if (!invitedUser || !group) { toast.error('Group not found'); return; }
+        if (invitedUser.joinedGroups.includes(groupId) || invitedUser.createdGroups.includes(groupId)) { toast.error('Already a member'); return; }
+
         invitedUser.joinedGroups = [...invitedUser.joinedGroups, groupId];
         group.memberCount++;
         group.members.push({
@@ -902,8 +927,22 @@ export const useAppStore = create<AppState>()(
         db.addGroupMember({ group_id: groupId, user_id: invitedUser.id, role: 'member', joined_at: new Date().toISOString().split('T')[0], matches_played: 0, wins: 0, losses: 0, win_rate: 0, attendance_rate: 0, current_streak: 0, points: 0 })
           .catch(dbError('Failed to add group member'));
 
-        toast.success(`Invited ${invitedUser.name} to the group!`);
-        return true;
+        if (inviterId) {
+          get().addNotification({
+            title: 'Invite Accepted',
+            body: `${invitedUser.name} accepted your invite to join "${group.name}"`,
+            type: 'group_join',
+            userId: inviterId,
+            actionUrl: `/groups/${groupId}`,
+            read: false,
+          });
+        }
+
+        toast.success(`Joined "${group.name}"!`);
+      },
+
+      declineGroupInvite: () => {
+        toast.success('Invitation declined');
       },
 
       updateGroupDetails: (groupId, updates) => {
@@ -1086,6 +1125,22 @@ export const useAppStore = create<AppState>()(
         db.updateFriendshipInDb(friendshipId, { status: 'accepted', updated_at: new Date().toISOString() })
           .catch(dbError('Failed to accept friendship'));
         toast.success('Friend request accepted!');
+      },
+
+      cancelFriendRequest: (friendshipId) => {
+        set(s => ({
+          friendships: s.friendships.filter(f => f.id !== friendshipId),
+        }));
+        db.deleteFriendshipInDb(friendshipId).catch(dbError('Failed to cancel friend request'));
+        toast.success('Friend request cancelled');
+      },
+
+      removeFriend: (friendshipId) => {
+        set(s => ({
+          friendships: s.friendships.filter(f => f.id !== friendshipId),
+        }));
+        db.deleteFriendshipInDb(friendshipId).catch(dbError('Failed to remove friend'));
+        toast.success('Friend removed');
       },
 
       // ---- STORIES ----

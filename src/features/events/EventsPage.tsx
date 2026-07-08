@@ -189,62 +189,89 @@ export const EventDetailPage: React.FC = () => {
 
         {/* ATTENDANCE */}
         <FadeUp delay={0.1}>
-          <SectionHeader title="Attendance" subtitle={`${confirmed.length} confirmed`} className="mb-3" />
-
-          {/* Vote buttons */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {ATTENDANCE_OPTIONS.map(opt => (
-              <motion.button
-                key={opt.status}
-                onClick={() => { if (event.status === 'completed') return; currentUserId && updateAttendance(event.id, currentUserId, opt.status); }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
-                  event.status === 'completed'
-                    ? 'opacity-50 cursor-not-allowed'
-                    : ''
-                } ${
-                  myAttendance?.status === opt.status
-                    ? 'text-white'
-                    : 'glass border-white/20 text-white/60 hover:text-white'
-                }`}
-                disabled={event.status === 'completed'}
-                style={myAttendance?.status === opt.status ? {
-                  background: `${opt.color}25`,
-                  borderColor: opt.color,
-                  boxShadow: `0 0 20px ${opt.color}35`,
-                } : {}}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <Iconic name={opt.icon} size={22} />
-                {opt.label}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Attendance groups */}
-          <div className="space-y-3">
-            {attendanceGroups.filter(g => g.items.length > 0).map(group => (
-              <div key={group.label}>
-                <p className="text-xs font-semibold text-white/40 mb-2 flex items-center gap-1.5">
-                  <Iconic name={group.icon} size={16} />
-                  {group.label}
-                  <span className="glass rounded-full px-2 py-0.5 text-white/60">{group.items.length}</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {group.items.map(record => {
-                    const user = users.find(u => u.id === record.userId);
-                    if (!user) return null;
-                    return (
-                      <div key={record.userId} className="flex items-center gap-2 glass rounded-2xl px-3 py-1.5">
-                        <Avatar src={user.avatar} name={user.name} size="xs" />
-                        <span className="text-white/80 text-xs font-medium">{user.name.split(' ')[0]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+          {event.status === 'completed' ? (
+            /* Historical: readonly summary of who came */
+            <>
+              <SectionHeader title="Attendance" subtitle={`${confirmed.length} confirmed`} className="mb-3" />
+              <div className="space-y-3">
+                {attendanceGroups.filter(g => g.items.length > 0).map(group => (
+                  <div key={group.label}>
+                    <p className="text-xs font-semibold text-white/40 mb-2 flex items-center gap-1.5">
+                      <Iconic name={group.icon} size={16} />
+                      {group.label}
+                      <span className="glass rounded-full px-2 py-0.5 text-white/60">{group.items.length}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.items.map(record => {
+                        const user = users.find(u => u.id === record.userId);
+                        if (!user) return null;
+                        return (
+                          <div key={record.userId} className="flex items-center gap-2 glass rounded-2xl px-3 py-1.5">
+                            <Avatar src={user.avatar} name={user.name} size="xs" />
+                            <span className="text-white/80 text-xs font-medium">{user.name.split(' ')[0]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <>
+              <SectionHeader title="Attendance" subtitle={`${confirmed.length} confirmed`} className="mb-3" />
+
+              {/* Vote buttons */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {ATTENDANCE_OPTIONS.map(opt => (
+                  <motion.button
+                    key={opt.status}
+                    onClick={() => { currentUserId && updateAttendance(event.id, currentUserId, opt.status); }}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
+                      myAttendance?.status === opt.status
+                        ? 'text-white'
+                        : 'glass border-white/20 text-white/60 hover:text-white'
+                    }`}
+                    style={myAttendance?.status === opt.status ? {
+                      background: `${opt.color}25`,
+                      borderColor: opt.color,
+                      boxShadow: `0 0 20px ${opt.color}35`,
+                    } : {}}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Iconic name={opt.icon} size={22} />
+                    {opt.label}
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Attendance groups */}
+              <div className="space-y-3">
+                {attendanceGroups.filter(g => g.items.length > 0).map(group => (
+                  <div key={group.label}>
+                    <p className="text-xs font-semibold text-white/40 mb-2 flex items-center gap-1.5">
+                      <Iconic name={group.icon} size={16} />
+                      {group.label}
+                      <span className="glass rounded-full px-2 py-0.5 text-white/60">{group.items.length}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.items.map(record => {
+                        const user = users.find(u => u.id === record.userId);
+                        if (!user) return null;
+                        return (
+                          <div key={record.userId} className="flex items-center gap-2 glass rounded-2xl px-3 py-1.5">
+                            <Avatar src={user.avatar} name={user.name} size="xs" />
+                            <span className="text-white/80 text-xs font-medium">{user.name.split(' ')[0]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </FadeUp>
 
         {/* ADMIN CONTROLS */}
