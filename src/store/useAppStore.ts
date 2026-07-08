@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import * as db from '../lib/db';
 import * as auth from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { BADGE_CONFIG } from '../data/sportConfig';
 
 let _requestChannel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -31,6 +32,8 @@ function evaluateBadges(user: any, allEvents: Event[]): BadgeId[] {
   if (s.attendanceRate === 100 && s.totalMatches >= 8) badges.push('iron_player');
   return [...new Set(badges)];
 }
+
+let _recentUnlocks: { userId: string; badgeId: string; emoji: string; label: string; rarity: string }[] = [];
 
 async function computeAllUserStats(events: Event[], set: any, get: any) {
   const users = get().users;
@@ -96,6 +99,15 @@ async function computeAllUserStats(events: Event[], set: any, get: any) {
     const allEvents = get().events;
     const earnedBadges = evaluateBadges({ ...user, stats: { totalMatches, wins, losses, winRate: wr, attendanceRate: attRate, currentStreak: curStreak, longestStreak, pointsTotal: pts, mvpCount, weeklyActivity: weekly, monthlyActivity: [], sportBreakdown: [] } }, allEvents);
 
+    const oldBadges: BadgeId[] = user.badges || [];
+    const newOnes = earnedBadges.filter((b: BadgeId) => !oldBadges.includes(b));
+    for (const bId of newOnes) {
+      const cfg = BADGE_CONFIG[bId];
+      if (cfg) {
+        _recentUnlocks.push({ userId: user.id, badgeId: bId, emoji: cfg.emoji, label: cfg.label, rarity: cfg.rarity });
+      }
+    }
+
     return {
       ...user,
       badges: earnedBadges,
@@ -118,9 +130,13 @@ async function computeAllUserStats(events: Event[], set: any, get: any) {
         win_rate: u.stats.winRate, attendance_rate: u.stats.attendanceRate,
         current_streak: u.stats.currentStreak, longest_streak: u.stats.longestStreak,
         weekly_activity: u.stats.weeklyActivity, points_total: u.stats.pointsTotal,
-        mvp_count: u.stats.mvpCount,
+        mvp_count: u.stats.mvpCount, badges: u.badges,
       });
     } catch (e) { console.warn('Stats save fail', u.id, e) }
+  }
+  // Show unlock toasts outside the iterator
+  for (const unlock of _recentUnlocks) {
+    toast.success(`${unlock.emoji} Badge Unlocked: ${unlock.label}`, { duration: 4000, position: 'top-center' });
   }
 }
 

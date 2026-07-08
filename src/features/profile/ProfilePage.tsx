@@ -20,7 +20,7 @@ const THEME_TOOLTIP = {
   itemStyle: { color: '#fff' },
 };
 
-const TABS = ['Stats', 'Badges', 'Friends'];
+const TABS = ['Stats', 'Achievements', 'Friends'];
 
 const RARITY_CONFIG: Record<string, { color: string; label: string }> = {
   common: { color: '#6b7280', label: 'Common' },
@@ -425,8 +425,8 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* ===== BADGES TAB ===== */}
-      {tab === 'Badges' && (
+      {/* ===== ACHIEVEMENTS TAB ===== */}
+      {tab === 'Achievements' && (
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-bold text-white/40 uppercase tracking-wider">

@@ -198,11 +198,13 @@ export async function fetchJoinRequests(): Promise<JoinRequest[]> {
 
 export async function updateUser(id: string, updates: any): Promise<void> {
   const statsFields = ['total_matches', 'wins', 'losses', 'attendance_rate', 'current_streak', 'longest_streak', 'win_rate', 'weekly_activity', 'points_total', 'mvp_count'];
+  const profileFields = ['badges'];
   const statsUpdates: any = {};
   const profileUpdates: any = {};
   const levelUpdates: any = {};
   for (const [k, v] of Object.entries(updates)) {
     if (statsFields.includes(k)) statsUpdates[k] = v;
+    else if (profileFields.includes(k)) profileUpdates[k] = v;
     else if (k === 'level' || k === 'xp') levelUpdates[k] = v;
     else profileUpdates[k] = v;
   }
