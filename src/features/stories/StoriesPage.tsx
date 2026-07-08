@@ -26,8 +26,13 @@ export const StoriesPage: React.FC = () => {
   const friendUsers = allUsers.filter((u: any) => friendIds.includes(u.id));
 
   const handleStoryUpload = (file: File) => {
-    const url = URL.createObjectURL(file);
-    uploadStory(url);
+    // Convert to base64 data URL so it persists across navigation / sessions
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      uploadStory(dataUrl);
+    };
+    reader.readAsDataURL(file);
     setStoryUploadOpen(false);
   };
 
