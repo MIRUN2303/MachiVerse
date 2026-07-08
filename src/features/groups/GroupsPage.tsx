@@ -20,7 +20,12 @@ const ROLE_CONFIG = {
   member: { label: 'Member', color: '#6b7280', icon: 'lightning' },
 };
 
-const LOGO_EMOJIS = ['≡ƒÅ╕', '≡ƒÅÅ', 'ΓÜ╜', '≡ƒÅô', '≡ƒÅÉ', '≡ƒÅÇ', '≡ƒÅâ', '≡ƒÜ┤', '≡ƒÑ╛', '≡ƒÅè', '≡ƒÄ¼', 'Γÿò', '≡ƒÜù', '≡ƒÄ«', '≡ƒÄ▓', '≡ƒÄ»', '≡ƒÆ¬', '≡ƒºÿ', '≡ƒÅï∩╕Å', 'Γ¢░∩╕Å', '≡ƒÅò∩╕Å', '≡ƒìò', '≡ƒÄ╡', '≡ƒÄ¿', '≡ƒô╕', '≡ƒî«', '≡ƒìö', '≡ƒºæΓÇì≡ƒì│', '≡ƒÄñ', '≡ƒÄº', '≡ƒÅä', '≡ƒ¢╣', '≡ƒÑè', '≡ƒñ╕', 'Γ¢│', '≡ƒÄ┐'];
+const LOGO_EMOJIS = [
+  '\u{1F3F8}', '\u{1F3CF}', '\u26BD', '\u{1F3D3}', '\u{1F3D0}', '\u{1F3C0}', '\u{1F3C3}', '\u{1F6B4}', '\u{1F97E}', '\u{1F3CA}',
+  '\u{1F3AC}', '\u2615', '\u{1F697}', '\u{1F3AE}', '\u{1F3B2}', '\u{1F3AF}', '\u{1F4AA}', '\u{1F9D8}', '\u{1F3CB}\uFE0F', '\u26F0\uFE0F',
+  '\u{1F3D5}\uFE0F', '\u{1F355}', '\u{1F3B5}', '\u{1F3A8}', '\u{1F4F8}', '\u{1F32E}', '\u{1F354}', '\u{1F9D1}\u200D\u{1F373}', '\u{1F3A4}', '\u{1F3A7}',
+  '\u{1F3C4}', '\u{1F6F9}', '\u{1F94A}', '\u{1F938}', '\u26F3', '\u{1F3BF}',
+];
 
 // =============================================
 // =============================================
@@ -190,11 +195,11 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
       <div className="flex items-center justify-between mb-4">
         <motion.button whileTap={{ scale: 0.9 }} onClick={prev}
           className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 text-sm"
-          style={{ background: 'rgba(255,255,255,0.05)' }}>ΓåÉ</motion.button>
+          style={{ background: 'rgba(255,255,255,0.05)' }}>←</motion.button>
         <p className="font-display font-bold text-white text-sm">{monthLabel}</p>
         <motion.button whileTap={{ scale: 0.9 }} onClick={next}
           className="w-8 h-8 rounded-xl flex items-center justify-center text-white/40 text-sm"
-          style={{ background: 'rgba(255,255,255,0.05)' }}>ΓåÆ</motion.button>
+          style={{ background: 'rgba(255,255,255,0.05)' }}>→</motion.button>
       </div>
 
       {/* Day labels */}
@@ -285,10 +290,10 @@ const CalendarView: React.FC<{ groupId: string }> = ({ groupId }) => {
                         style={{ background: `${cfg?.color || '#7c3aed'}20` }}>{cfg?.emoji ? <Iconic name={cfg.emoji} size={16} /> : <Iconic name="calendar" size={16} />}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-white truncate">{e.title}</p>
-                        <p className="text-[10px] text-white/40">{e.time} ┬╖ {e.venue}</p>
+                        <p className="text-[10px] text-white/40">{e.time} · {e.venue}</p>
                       </div>
                       <Badge variant={e.status === 'upcoming' ? 'blue' : 'glass'} size="sm">
-                        {e.status === 'upcoming' ? 'Soon' : 'Γ£ô'}
+                        {e.status === 'upcoming' ? 'Soon' : '✓'}
                       </Badge>
                     </motion.div>
                   );
@@ -447,7 +452,7 @@ const CreateGroupModal: React.FC<{ open: boolean; onClose: () => void }> = ({ op
           </div>
 
           <motion.button onClick={handleSubmit} className="btn-lime w-full py-3.5 font-black text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            Create Group ΓåÆ
+            Create Group →
           </motion.button>
         </div>
       </motion.div>
@@ -501,7 +506,7 @@ export const GroupDetailPage: React.FC = () => {
         }}
       >
         <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-20 w-10 h-10 rounded-2xl flex items-center justify-center text-white"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>ΓåÉ</button>
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.1)' }}>←</button>
         <div className="absolute top-4 right-4 z-20 flex gap-1.5">
           {group.tags.slice(0, 3).map(tag => {
             const cfg = SPORT_CONFIG[tag as keyof typeof SPORT_CONFIG];
@@ -665,7 +670,7 @@ export const GroupDetailPage: React.FC = () => {
                       <Avatar src={user.avatar} name={user.name} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-white text-sm">{user.name}</p>
-                        <p className="text-white/40 text-xs">{stats.matchesPlayed} matches ┬╖ {stats.wins}W {stats.losses}L</p>
+                        <p className="text-white/40 text-xs">{stats.matchesPlayed} matches · {stats.wins}W {stats.losses}L</p>
                       </div>
                       <div className="text-right">
                         <p className={clsx('font-bold text-base', stats.winRate >= 60 ? 'text-green-400' : stats.winRate >= 40 ? 'text-amber-400' : 'text-red-400')}>
@@ -699,7 +704,7 @@ export const GroupDetailPage: React.FC = () => {
                           {SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]?.emoji ? <Iconic name={SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]!.emoji} size={24} /> : <Iconic name="calendar" size={24} />}
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white text-sm truncate">{event.title}</p>
-                            <p className="text-white/50 text-xs">{event.date} ┬╖ {event.time} ┬╖ {event.venue}</p>
+                            <p className="text-white/50 text-xs">{event.date} · {event.time} · {event.venue}</p>
                           </div>
                           <div className="flex items-center gap-1.5">
                             {myStatus && (
@@ -730,9 +735,9 @@ export const GroupDetailPage: React.FC = () => {
                           {SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]?.emoji ? <Iconic name={SPORT_CONFIG[event.sport as keyof typeof SPORT_CONFIG]!.emoji} size={22} /> : <Iconic name="calendar" size={22} />}
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-white text-sm">{event.title}</p>
-                            <p className="text-white/40 text-xs">{event.date} ┬╖ {event.venue}</p>
+                            <p className="text-white/40 text-xs">{event.date} · {event.venue}</p>
                           </div>
-                          <Badge variant="glass" size="sm">Γ£ô Done</Badge>
+                          <Badge variant="glass" size="sm">✓ Done</Badge>
                         </div>
                         {event.leagues.length > 0 && (
                           <div className="space-y-3">
@@ -940,7 +945,7 @@ export const GroupsPage: React.FC = () => {
           </div>
           <div className="text-right">
             <p className="font-bold text-sm" style={{ color: 'var(--green)' }}>Overall WR: {overall.overallWinRate}%</p>
-            <p className="text-white/40 text-xs">{overall.totalWins}W ┬╖ {overall.totalLosses}L</p>
+            <p className="text-white/40 text-xs">{overall.totalWins}W · {overall.totalLosses}L</p>
           </div>
         </div>
       </FadeUp>
@@ -949,7 +954,7 @@ export const GroupsPage: React.FC = () => {
         <div className="glass rounded-2xl p-3 flex items-center justify-between">
           <div>
             <p className="text-white/60 text-xs">Created / Joined limit</p>
-            <p className="font-bold text-white text-sm">{currentUser?.createdGroups.length || 0}/3 created ┬╖ {currentUser?.joinedGroups.length || 0}/3 joined</p>
+            <p className="font-bold text-white text-sm">{currentUser?.createdGroups.length || 0}/3 created {'\u00B7'} {currentUser?.joinedGroups.length || 0}/3 joined</p>
           </div>
         </div>
       </FadeUp>
@@ -980,7 +985,7 @@ export const GroupsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-display font-bold text-white drop-shadow-lg">{group.name}</p>
-                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members ┬╖ {group.totalEvents} events</p>
+                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members · {group.totalEvents} events</p>
                     </div>
                   </div>
                 </div>
@@ -1025,7 +1030,7 @@ export const GroupsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-display font-bold text-white drop-shadow-lg">{group.name}</p>
-                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members ┬╖ {group.totalEvents} events</p>
+                      <p className="text-white/60 text-xs drop-shadow">{group.memberCount} members · {group.totalEvents} events</p>
                     </div>
                   </div>
                 </div>
