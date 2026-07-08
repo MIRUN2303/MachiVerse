@@ -80,7 +80,7 @@ async function computeAllUserStats(events: Event[], set: any, get: any) {
     };
   });
 
-  set((s: any) => ({ users: updated }));
+  set({ users: updated } as any);
   for (const u of updated) {
     try {
       await db.updateUser(u.id, {

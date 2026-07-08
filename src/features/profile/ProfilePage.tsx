@@ -28,8 +28,6 @@ export const ProfilePage: React.FC = () => {
   const logout = useAppStore(s => s.logout);
   const user = users.find(u => u.id === currentUserId);
 
-  const hexMax = 100;
-
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -55,10 +53,10 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
-  const weeklyData = DAYS.map((day, i) => ({ day, value: user.stats.weeklyActivity[i] || 0 }));
-  const monthlyData = user.stats.monthlyActivity?.length ? user.stats.monthlyActivity : [];
-  const sportData = user.stats.sportBreakdown?.length ? user.stats.sportBreakdown : [];
-  const totalSportMatches = sportData.reduce((s, d) => s + d.matches, 0) || 1;
+  const weeklyData = DAYS.map((day: string, i: number) => ({ day, value: user.stats.weeklyActivity[i] || 0 }));
+  const monthlyData: { month: string; matches: number; wins: number }[] = user.stats.monthlyActivity?.length ? user.stats.monthlyActivity : [];
+  const sportData: { sport: string; matches: number; wins: number }[] = user.stats.sportBreakdown?.length ? user.stats.sportBreakdown : [];
+  const totalSportMatches = sportData.reduce((s: number, d: { matches: number }) => s + d.matches, 0) || 1;
 
   return (
     <div className="pb-24 max-w-lg mx-auto px-4">
@@ -144,7 +142,7 @@ export const ProfilePage: React.FC = () => {
                   <YAxis hide />
                   <Tooltip contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12, color: '#fff' }} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="var(--green)">
-                    {weeklyData.map((_, i) => (
+                    {weeklyData.map((_d: { day: string; value: number }, i: number) => (
                       <Cell key={i} fill={i === new Date().getDay() - 1 ? 'var(--green)' : 'rgba(var(--green-rgb),0.25)'} />
                     ))}
                   </Bar>
@@ -179,7 +177,7 @@ export const ProfilePage: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={sportData} dataKey="matches" nameKey="sport" cx="50%" cy="50%" innerRadius={24} outerRadius={42} paddingAngle={2}>
-                      {sportData.map((_, i) => (
+                      {sportData.map((_s: { sport: string; matches: number; wins: number }, i: number) => (
                         <Cell key={i} fill={SPORT_COLORS[i % SPORT_COLORS.length]} />
                       ))}
                     </Pie>
@@ -188,7 +186,7 @@ export const ProfilePage: React.FC = () => {
                 </ResponsiveContainer>
               </div>
               <div className="flex-1 space-y-1.5">
-                {sportData.map((s, i) => {
+                {sportData.map((s: { sport: string; matches: number; wins: number }, i: number) => {
                   const cfg = SPORT_CONFIG[s.sport as keyof typeof SPORT_CONFIG];
                   const pct = Math.round((s.matches / totalSportMatches) * 100);
                   return (
@@ -213,7 +211,6 @@ export const ProfilePage: React.FC = () => {
             {RADAR_METRICS.map(m => {
               const raw = user.stats[m.key as keyof typeof user.stats] as number;
               const pct = m.key === 'winRate' || m.key === 'attendanceRate' ? raw : Math.min(100, raw * 10);
-              const size = Math.max(40, pct);
               return (
                 <div key={m.key} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
                   <div className="relative" style={{ width: 56, height: 56 }}>
