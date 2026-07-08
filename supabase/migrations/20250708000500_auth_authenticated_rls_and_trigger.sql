@@ -21,7 +21,7 @@ SECURITY DEFINER SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.users (
-    id, name, username, email, password, profile_code,
+    id, name, username, email, phone, password, profile_code,
     avatar, cover_image,
     bio, favourite_sports, badges,
     total_matches, wins, losses, attendance_rate,
@@ -33,6 +33,7 @@ BEGIN
     COALESCE(new.raw_user_meta_data ->> 'name', SPLIT_PART(new.email, '@', 1)),
     LOWER(COALESCE(new.raw_user_meta_data ->> 'name', SPLIT_PART(new.email, '@', 1))),
     new.email,
+    COALESCE(new.raw_user_meta_data ->> 'phone', ''),
     '',
     UPPER(SPLIT_PART(COALESCE(new.raw_user_meta_data ->> 'name', new.email), ' ', 1)) || '001',
     'https://api.dicebear.com/9.x/avataaars/svg?seed=' || REPLACE(COALESCE(new.raw_user_meta_data ->> 'name', new.email), ' ', '%20') || '&backgroundColor=b6e3f4',

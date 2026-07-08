@@ -124,6 +124,15 @@ export const SignupPage: React.FC = () => {
           Already have an account?{' '}
           <Link to="/login" className="text-[var(--green)] font-semibold hover:underline">Sign in</Link>
         </motion.p>
+
+        <motion.div custom={9} variants={formItem} initial="initial" animate="animate" className="mt-2 text-center">
+          <Link to="/home"
+            className="inline-flex items-center gap-1.5 text-xs text-white/20 hover:text-white/50 transition-colors group"
+          >
+            Continue as Guest
+            <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          </Link>
+        </motion.div>
       </motion.div>
     </div>
   );
