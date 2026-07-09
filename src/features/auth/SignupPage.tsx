@@ -61,7 +61,7 @@ export const SignupPage: React.FC = () => {
               </div>
             </div>
           </motion.div>
-          <h1 className="font-logo text-2xl tracking-[0.15em] text-white">Whos<span className="inline-block text-[var(--green)]" style={{ textShadow: '0 0 20px rgba(var(--green-rgb),0.4)' }}>I</span>n</h1>
+          <h1 className="font-logo text-2xl tracking-wider text-white">Whos<span className="inline-block text-[var(--green)]" style={{ textShadow: '0 0 20px rgba(var(--green-rgb),0.4)' }}>I</span>n</h1>
           <p className="text-white/40 text-xs mt-0.5 font-medium">Create your account</p>
         </div>
 
